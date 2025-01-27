@@ -14,5 +14,6 @@ options:
   -t TARGET             *Define ip to scan
   --concurrent CONCURRENT
                         Concurrent limit in the event loop, default = 4
-  --proxy PROXY         Define proxy address/port url(http://xxx:xxx)```
+  --proxy PROXY         Define proxy address/port url(http://xxx:xxx)
+  ```
 
