@@ -28,8 +28,11 @@ class PortScanner:
         )
         argument_parser.add_argument("-t", help="*Define ip to scan",
                             action="store", dest='target')
-        argument_parser.add_argument("--concurrent", help="Concurrent limit in the event loop, default = 4",
-                            action="store", dest='concurrent')
+        #Added args for ports, gotta implement the logic to propely handle it and use it for the portscanner
+        argument_parser.add_argument("-p", help="Define the ports you want to scan (e.g., '4444', '20-8080' or '22,80,8080').",
+                            action="store", dest='ports', default="1-1000")
+        argument_parser.add_argument("--concurrent", help="Concurrent limit in the event loop",
+                            action="store", dest='concurrent', default=4)
         argument_parser.add_argument("--proxy", help="Define proxy address/port url(http://xxx:xxx)",
                             action="store", dest='proxy')
         arguments = argument_parser.parse_args()
@@ -50,7 +53,7 @@ class PortScanner:
             self.concurrent_limit = 4
             
         #Adjust the common_ports to a lower range (for actual common ports), using 9000-9201 for testing
-        self.common_ports = [i for i in range(9000, 9201)]
+        self.common_ports = [i for i in range(1, 1000)]
         self.semaphore = asyncio.Semaphore(self.concurrent_limit)
     
     #Procedure to handle the actual scanning
