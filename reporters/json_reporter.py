@@ -22,7 +22,7 @@ class JsonReporter(ScanReporter):
         result = {
             "target": self.target,
             "total_ports": self.total_ports,
-            "scanned_ports": self.scanned_ports,
+            "scanned_ports_count": self.scanned_ports,
             "open_ports": self.open_ports,
             "errors": self.errors,
             "last_error": self.last_error,

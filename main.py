@@ -153,10 +153,14 @@ def parse_args():
 
 
 def parse_int_list(range_str) -> list[int]:
+    if range_str == "":
+        return []
     return _parse_int_list(range_str.replace(" ", ""))
 
 
 def _parse_int_list(range_str) -> list[int]:
+    if range_str == "":
+        return []
     if "," in range_str:
         return [x for p in range_str.split(",") for x in _parse_int_list(p)]
     elif "-" in range_str:
