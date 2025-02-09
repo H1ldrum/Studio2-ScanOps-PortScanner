@@ -3,6 +3,7 @@ import asyncio
 from time import perf_counter
 
 from reporters.cli_reporter import ConsoleReporter, print_compact_list_of_ints
+from reporters.json_reporter import JsonReporter
 from reporters.reporter import ScanReporter
 from scanners.http_port_scanner import HttpPortScanner
 from scanners.scanner import Scanner
@@ -93,6 +94,8 @@ def createReporter(args) -> ScanReporter | None:
         return None
     if args.reporter == "text":
         return ConsoleReporter()
+    if args.reporter == "json":
+        return JsonReporter()
 
 
 def parse_args():
@@ -123,7 +126,9 @@ def parse_args():
     parser.add_argument(
         "-", "--timeout_ms", type=int, default=3000, help="Timeout in ms."
     )
-    parser.add_argument("--reporter", default="text")
+    parser.add_argument(
+        "--reporter", default="text", help="json, None or text (default)"
+    )
 
     http_scanner.add_argument(
         "-m", "--method", type=str, default="HEAD", help="HTTP-verb to use for scanning"
