@@ -2,16 +2,17 @@ import argparse
 import asyncio
 from time import sleep
 
+from cli_reporter import ConsoleReporter
 from http_port_scanner import HttpPortScanner
+from reporter import ScanReporter
+from scanner import Scanner
 
 
 async def main():
     args = parse_args()
     if args.command == "http_scan":
-        print(
-            f"Scanning '{args.target}', ports='{args.ports}' concurrency='{args.concurrent}' proxy='{args.proxy}' "
-        )
-        scanner = HttpPortScanner(
+        reporter: ScanReporter = ConsoleReporter()
+        scanner: Scanner = HttpPortScanner(
             target=args.target,
             ports=parse_int_list(args.ports),
             status_code_filter=parse_int_list(args.status_code_filter),
@@ -19,7 +20,21 @@ async def main():
             proxy=args.proxy,
             method=args.method,
         )
-        await scanner.run_scans()
+        reporter.report_start(scanner.target, scanner.ports)
+
+        async def scan_and_collect(port):
+            is_open = await scanner.scan_port(port)
+            # last_error = None
+
+            if reporter is not None:
+                reporter.update_progress(port, is_open)
+            return is_open
+
+        tasks = [scan_and_collect(port) for port in scanner.ports]
+        await asyncio.gather(*tasks)
+
+        if reporter is not None:
+            reporter.report_final()
     else:
         print(f"Unknown command {args.command}")
         exit(1)
@@ -57,7 +72,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def parse_int_list(range_str) -> range | list[int]:
+def parse_int_list(range_str) -> list[int]:
     if range_str == "":
         return []
     return [
