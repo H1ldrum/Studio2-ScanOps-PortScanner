@@ -18,7 +18,9 @@ class ScanReporter(ABC):
             self.open_ports.append(current_port)
 
     @abstractmethod
-    def report_start(self, target: str, ports: Ports, extra: str = "") -> None:
+    def report_start(
+        self, target: str, ports: Ports, prefix="", suffix: str = ""
+    ) -> None:
         self.total_ports = len(ports)
         self.scanned_ports = 0
         self.last_error = ""

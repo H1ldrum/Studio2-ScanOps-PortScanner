@@ -21,20 +21,24 @@ class ConsoleReporter(ScanReporter):
             flush=True,
         )
 
-    def report_start(self, target: str, ports: List[int], extra: str = "") -> None:
-        super().report_start(target, ports, extra)
-        print(f"Starting scan on {target} for {self.total_ports} ports {extra}")
-
-    def report_final(self) -> None:
+    def report_start(
+        self, target: str, ports: List[int], prefix="", suffix: str = ""
+    ) -> None:
+        super().report_start(target, ports, prefix, suffix)
         print(
-            f"\rFound {len(self.open_ports)} open ports: {print_compact_list_of_ints(self.open_ports)}",
+            f"{prefix}Starting scan on {target} for {self.total_ports} ports {suffix}"
+        )
+
+    def report_final(self, time_taken) -> None:
+        print(
+            f"\rFound {len(self.open_ports)} open ports: {print_compact_list_of_ints(self.open_ports)} in {time_taken:.3f}ms\n",
             end="",
             flush=True,
         )
         if len(self.errors) > 0:
             total = sum(len(v) for v in self.errors.values())
             print(
-                f"Additionally, these {len(self.errors)} unique errors occured, which may indicate additinoal open non-http-ports (a total of {total})"
+                f"Additionally, these {len(self.errors)} unique errors occured, which may indicate open non-http-ports (a total of {total})"
             )
             for error_name, ports in self.errors.items():
                 print(

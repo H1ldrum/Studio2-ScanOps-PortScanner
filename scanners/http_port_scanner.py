@@ -9,8 +9,6 @@ class HttpPortScanner(Scanner):
     def __init__(
         self,
         target: str,
-        ports: list[int],
-        concurrent: int = 4,
         proxy: str = "",
         method="HEAD",
         timeout_ms: int = 3000,
@@ -19,11 +17,8 @@ class HttpPortScanner(Scanner):
     ):
         self.target = target
         self.method = method
-        self.concurrent_limit = concurrent
-        self.ports = ports
         self.status_code_filter = status_code_filter
         self.status_code_ignore_filter = status_code_ignore_filter
-        self.semaphore = asyncio.Semaphore(self.concurrent_limit)
 
         self.req = URLRequest(
             proxy=proxy,
@@ -37,10 +32,8 @@ class HttpPortScanner(Scanner):
             code = response.status
             if code in self.status_code_ignore_filter:
                 return False
-            if not self.status_code_filter:
-                return False
-            if code in self.status_code_filter:
-                return True
+            if len(self.status_code_filter) > 0:
+                return code in self.status_code_filter
             return True
 
         except aiohttp.ClientConnectorError:
@@ -56,7 +49,5 @@ class URLRequest:
 
     async def get(self, url, method="HEAD"):
         async with aiohttp.ClientSession() as session:
-            async with session.request(
-                method, url, timeout=self.timeout, proxy=self.proxy
-            ) as response:
+            async with session.request(method, url, proxy=self.proxy) as response:
                 return response

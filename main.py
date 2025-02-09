@@ -1,86 +1,138 @@
 import argparse
 import asyncio
+from time import perf_counter
 
-from reporters.cli_reporter import ConsoleReporter
+from reporters.cli_reporter import ConsoleReporter, print_compact_list_of_ints
 from reporters.reporter import ScanReporter
 from scanners.http_port_scanner import HttpPortScanner
 from scanners.scanner import Scanner
+from scanners.tcp_scanner import TCPScanner
 
 
 async def main():
     args = parse_args()
-    if args.command == "http_scan":
-        reporter: ScanReporter = ConsoleReporter()
-        scanner: Scanner = HttpPortScanner(
-            target=args.target,
-            timeout_ms=args.timeout_ms,
-            ports=parse_int_list(args.ports),
-            status_code_filter=parse_int_list(args.status_code_filter),
-            status_code_ignore_filter=parse_int_list(args.status_code_ignore_filter),
-            proxy=args.proxy,
-            method=args.method,
-        )
-        reporter.report_start(
-            scanner.target,
-            scanner.ports,
-            f"concurrency={args.concurrent} timeout={args.timeout_ms}ms",
-        )
+    if args.list_ports:
+        print(f"Ports to scan: {print_compact_list_of_ints(args.ports)}")
+    if args.command == "http_scan" or args.command == "tcp_scan":
+        reporter = createReporter(args)
+        scanner = createScanner(args)
+        if reporter:
+            reporter.report_start(
+                args.target,
+                args.ports,
+                prefix=type(scanner).__name__ + " ",
+                suffix=f"concurrency={args.concurrent} timeout={args.timeout_ms}ms",
+            )
 
         semaphore = asyncio.Semaphore(args.concurrent)
 
         async def scan_and_collect(port):
             async with semaphore:
                 is_open = await scanner.scan_port(port)
-                if reporter is not None:
+                if reporter:
                     reporter.update_progress(port, is_open)
                 return is_open
 
-        tasks = [scan_and_collect(port) for port in scanner.ports]
+        start = perf_counter()
+        tasks = [scan_and_collect(port) for port in args.ports]
         await asyncio.gather(*tasks)
+        elapsed = perf_counter() - start
 
-        if reporter is not None:
-            reporter.report_final()
+        if reporter:
+            reporter.report_final(elapsed)
     else:
         print(f"Unknown command {args.command}")
         exit(1)
+
+
+commonPorts = {
+    21: "ftp",
+    22: "ssh",
+    23: "telnet",
+    25: "smtp",
+    53: "dns",
+    80: "http",
+    110: "pop3",
+    143: "imap",
+    443: "https",
+    3000: "dev",
+    3001: "dev-alt",
+    3389: "rdp",
+    4200: "angular",
+    5000: "flask",
+    5173: "vite",
+    8000: "http-alt",
+    8008: "http-proxy",
+    8080: "http-proxy",
+    9000: "portainer",
+}
+
+
+def createScanner(args) -> Scanner:
+    if args.command == "http_scan":
+        return HttpPortScanner(
+            target=args.target,
+            timeout_ms=args.timeout_ms,
+            status_code_filter=args.status_code_filter,
+            status_code_ignore_filter=args.status_code_ignore_filter,
+            proxy=args.proxy,
+            method=args.method,
+        )
+    return TCPScanner(args.target, args.timeout_ms / 1000)
+
+
+def createReporter(args) -> ScanReporter | None:
+    if args.reporter == "None":
+        return None
+    if args.reporter == "text":
+        return ConsoleReporter()
 
 
 def parse_args():
     parser = argparse.ArgumentParser(prog="scanops", description="ScanOps")
     subparsers = parser.add_subparsers(dest="command")
 
-    http_scanner = subparsers.add_parser("http_scan", help="Scan ports")
-    http_scanner.add_argument(
+    http_scanner = subparsers.add_parser("http_scan", help="Scan ports over HTTP")
+    subparsers.add_parser("tcp_scan", help="Scan ports over TCP")
+    parser.add_argument(
         "-t", "--target", required=True, help="Target IP/hostname to scan"
     )
-    http_scanner.add_argument(
+    parser.add_argument(
         "-p",
         "--ports",
-        default="80,443,3000,3001,4200,5000,5173,8000,8008,8080,9000",
+        default=commonPorts.keys(),
         help='Ports to scan (e.g. "80,443,8080" or "20-1000")',
+        type=parse_int_list,
     )
-    http_scanner.add_argument(
+    parser.add_argument(
         "-c", "--concurrent", type=int, default=50, help="Number of concurrent scans"
     )
-    http_scanner.add_argument(
+    parser.add_argument(
+        "--list-ports",
+        action=argparse.BooleanOptionalAction,
+        help="Prints the ports supplied",
+    )
+    parser.add_argument(
         "-", "--timeout_ms", type=int, default=3000, help="Timeout in ms."
     )
+    parser.add_argument("--reporter", default="text")
+
     http_scanner.add_argument(
         "-m", "--method", type=str, default="HEAD", help="HTTP-verb to use for scanning"
     )
     http_scanner.add_argument(
         "-s",
         "--status-code-filter",
-        type=str,
         default="",
-        help='Allows filtering by status-code. Can be comma-separated, or a range (eg. "200,205" or "200-499")',
+        help='Allows limiting ports considered open to only those defined here. Can be comma-separated, or a range (eg. "200,205" or "200-499")',
+        type=parse_int_list,
     )
     http_scanner.add_argument(
         "-S",
         "--status-code-ignore-filter",
-        type=str,
         default="",
-        help='Allows ignoring responses by status-code. Can be comma-separated, or a range (eg. "200,205" or "200-499")',
+        help='Allows limiting ports considered open to only those NOT defined here. Can be comma-separated, or a range (eg. "200,205" or "200-499")',
+        type=parse_int_list,
     )
     http_scanner.add_argument("--proxy", help='Proxy URL (e.g. "http://proxy:8080")')
 
