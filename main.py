@@ -1,11 +1,10 @@
 import argparse
 import asyncio
-from time import sleep
 
-from cli_reporter import ConsoleReporter
-from http_port_scanner import HttpPortScanner
-from reporter import ScanReporter
-from scanner import Scanner
+from reporters.cli_reporter import ConsoleReporter
+from reporters.reporter import ScanReporter
+from scanners.http_port_scanner import HttpPortScanner
+from scanners.scanner import Scanner
 
 
 async def main():

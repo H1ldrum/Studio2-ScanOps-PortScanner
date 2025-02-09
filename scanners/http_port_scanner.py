@@ -2,7 +2,7 @@ import asyncio
 
 import aiohttp
 
-from scanner import Scanner
+from scanners.scanner import Scanner
 
 
 class HttpPortScanner(Scanner):

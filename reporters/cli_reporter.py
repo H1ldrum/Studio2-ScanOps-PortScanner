@@ -1,6 +1,6 @@
 from typing import List
 
-from reporter import ScanReporter
+from reporters.reporter import ScanReporter
 
 
 class ConsoleReporter(ScanReporter):
