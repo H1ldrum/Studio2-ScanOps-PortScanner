@@ -148,25 +148,16 @@ def parse_args():
 
 
 def parse_int_list(range_str) -> list[int]:
-    if range_str == "":
-        return []
-    return list(
-        set(
-            [
-                num
-                for split in range_str.replace(" ", "").split(";")
-                for num in _parse_int_list(split)
-            ]
-        )
-    )
+    return _parse_int_list(range_str.replace(" ", ""))
 
 
-def _parse_int_list(range_str):
-    if "-" in range_str:
+def _parse_int_list(range_str) -> list[int]:
+    if "," in range_str:
+        return [x for p in range_str.split(",") for x in _parse_int_list(p)]
+    elif "-" in range_str:
         start, end = map(int, range_str.split("-"))
-        return range(start, end + 1)
-    elif "," in range_str:
-        return [int(p) for p in range_str.split(",")]
+        return list(range(start, end + 1))
+
     else:
         return [int(range_str)]
 
