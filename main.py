@@ -13,21 +13,27 @@ async def main():
         reporter: ScanReporter = ConsoleReporter()
         scanner: Scanner = HttpPortScanner(
             target=args.target,
+            timeout_ms=args.timeout_ms,
             ports=parse_int_list(args.ports),
             status_code_filter=parse_int_list(args.status_code_filter),
-            concurrent=args.concurrent,
+            status_code_ignore_filter=parse_int_list(args.status_code_ignore_filter),
             proxy=args.proxy,
             method=args.method,
         )
-        reporter.report_start(scanner.target, scanner.ports)
+        reporter.report_start(
+            scanner.target,
+            scanner.ports,
+            f"concurrency={args.concurrent} timeout={args.timeout_ms}ms",
+        )
+
+        semaphore = asyncio.Semaphore(args.concurrent)
 
         async def scan_and_collect(port):
-            is_open = await scanner.scan_port(port)
-            # last_error = None
-
-            if reporter is not None:
-                reporter.update_progress(port, is_open)
-            return is_open
+            async with semaphore:
+                is_open = await scanner.scan_port(port)
+                if reporter is not None:
+                    reporter.update_progress(port, is_open)
+                return is_open
 
         tasks = [scan_and_collect(port) for port in scanner.ports]
         await asyncio.gather(*tasks)
@@ -54,7 +60,10 @@ def parse_args():
         help='Ports to scan (e.g. "80,443,8080" or "20-1000")',
     )
     http_scanner.add_argument(
-        "-c", "--concurrent", type=int, default=4, help="Number of concurrent scans"
+        "-c", "--concurrent", type=int, default=50, help="Number of concurrent scans"
+    )
+    http_scanner.add_argument(
+        "-", "--timeout_ms", type=int, default=3000, help="Timeout in ms."
     )
     http_scanner.add_argument(
         "-m", "--method", type=str, default="HEAD", help="HTTP-verb to use for scanning"
@@ -66,6 +75,13 @@ def parse_args():
         default="",
         help='Allows filtering by status-code. Can be comma-separated, or a range (eg. "200,205" or "200-499")',
     )
+    http_scanner.add_argument(
+        "-S",
+        "--status-code-ignore-filter",
+        type=str,
+        default="",
+        help='Allows ignoring responses by status-code. Can be comma-separated, or a range (eg. "200,205" or "200-499")',
+    )
     http_scanner.add_argument("--proxy", help='Proxy URL (e.g. "http://proxy:8080")')
 
     return parser.parse_args()
@@ -74,11 +90,15 @@ def parse_args():
 def parse_int_list(range_str) -> list[int]:
     if range_str == "":
         return []
-    return [
-        num
-        for split in range_str.replace(" ", "").split(";")
-        for num in _parse_int_list(split)
-    ]
+    return list(
+        set(
+            [
+                num
+                for split in range_str.replace(" ", "").split(";")
+                for num in _parse_int_list(split)
+            ]
+        )
+    )
 
 
 def _parse_int_list(range_str):

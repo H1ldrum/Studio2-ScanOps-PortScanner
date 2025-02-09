@@ -44,3 +44,14 @@ options:
   ```
 
 
+### Project structure
+
+The project is structured in a modular way. This keeps each module simple, but does require each module to adhere to fixed interfaces.
+
+`main.py` is the entrypoint of the program. It handles parsing of input from the user, 
+instantiates specific implementations of modules.
+
+Scanners are implementation of a certain type of scanner. Currently, only the HTTP-scanner is implemented.
+These are responsible for handling the specifics of performing an actual scan on a single port.
+
+Reporters are responsible for reporting on the progress during a scan, when it starts, as well as when it is complete. 

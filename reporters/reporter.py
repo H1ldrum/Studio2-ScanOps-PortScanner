@@ -13,7 +13,7 @@ class ScanReporter(ABC):
             if error_name not in self.errors:
                 self.errors[error_name] = []
             self.errors[error_name].append(current_port)
-            # last_error = f"Last error {error_name} on {port}"
+            self.last_error = f"Last error {error_name} on {current_port}"
         elif is_open:
             self.open_ports.append(current_port)
 
@@ -21,9 +21,9 @@ class ScanReporter(ABC):
     def report_start(self, target: str, ports: Ports, extra: str = "") -> None:
         self.total_ports = len(ports)
         self.scanned_ports = 0
+        self.last_error = ""
         self.open_ports: Ports = []
         self.errors: Dict[str, Ports] = {}
-        print("foo started")
         pass
 
     @abstractmethod
