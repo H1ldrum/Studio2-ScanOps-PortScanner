@@ -1,6 +1,8 @@
 # Studio2-ScanOps-PortScanner
 Artifact for our project in Studio 2
 
+![Example of cli running http_scan](./docs/samplescan.gif)
+
 ## Getting started.
 
 You probably want to create a virtual environment first, and source it, for instance like:
