@@ -1,0 +1,63 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            output_name: scanops_linux_${{ github.ref_name }}
+          - os: windows-latest
+            output_name: scanops_${{ github.ref_name }}.exe
+          - os: macos-latest
+            output_name: scanops_macos_${{ github.ref_name }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Create version.py
+      run: |
+        echo "VERSION = '${{ github.ref_name }}'" > version.py
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
+
+    - name: Build binary
+      run: pyinstaller --onefile --name ${{ matrix.output_name }} --collect-submodules=reporters --collect-submodules=scanners main.py
+
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.output_name }}
+        path: dist/${{ matrix.output_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          scanops_linux_${{ github.ref_name }}
+          scanops_${{ github.ref_name }}.exe
+          scanops_macos_${{ github.ref_name }}

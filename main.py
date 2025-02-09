@@ -9,10 +9,14 @@ from scanners.http_port_scanner import HttpPortScanner
 from scanners.scanner import Scanner
 from scanners.socket_scanner import SocketScanner
 from scanners.tcp_scanner import TCPScanner
+from version import VERSION
 
 
 async def main():
     args = parse_args()
+    if args.command == "version":
+        print(f"scanops v{VERSION}")
+        return
     if args.list_ports:
         print(f"Ports to scan: {print_compact_list_of_ints(args.ports)}")
     if (
@@ -105,6 +109,8 @@ def parse_args():
     http_scanner = subparsers.add_parser("http_scan", help="Scan ports over HTTP")
     subparsers.add_parser("tcp_scan", help="Scan ports over TCP")
     subparsers.add_parser("socket_scan", help="Scan ports using sockets")
+    subparsers.add_parser("version", help="Show version")
+
     parser.add_argument(
         "-t", "--target", required=True, help="Target IP/hostname to scan"
     )
