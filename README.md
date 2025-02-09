@@ -23,22 +23,22 @@ You should now be ready to run the application:
 Run it with 
 
 ```
-python portscanner.py
+python main.py scan
 
 ```
 
 ```bash
-usage: Portscanner by ScanOps [-h] [-t TARGET] [--concurrent CONCURRENT]
-                              [--proxy PROXY]
-
-Multipurpose portscanner to discover open ports and detect running services |
-Arguments prepended with * is mandatory
+usage: main.py scan [-h] -t TARGET [-p PORTS] [-c CONCURRENT] [-m METHOD]
+                    [--proxy PROXY]
 
 options:
-  -h, --help                show this help message and exit
-  -t TARGET                 *Define ip to scan
-  --concurrent CONCURRENT   Concurrent limit in the event loop, default = 4
-  --proxy PROXY             Define proxy address/port url(http://xxx:xxx)
+  -h, --help            show this help message and exit
+  -t, --target TARGET   Target IP/hostname to scan
+  -p, --ports PORTS     Ports to scan (e.g. "80,443,8080" or "20-1000")
+  -c, --concurrent CONCURRENT
+                        Number of concurrent scans
+  -m, --method METHOD   HTTP-verb to use for scanning
+  --proxy PROXY         Proxy URL (e.g. "http://proxy:8080")
   ```
 
 
