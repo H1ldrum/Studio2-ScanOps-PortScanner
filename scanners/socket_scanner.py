@@ -1,19 +1,24 @@
 import asyncio
+import socket
 
 from scanners.scanner import Scanner
 
 
-class TCPScanner(Scanner):
+class SocketScanner(Scanner):
     def __init__(self, host: str, timeout: float = 1.0):
         self.host = host
         self.timeout = timeout
 
     async def scan_port(self, port: int) -> bool:
         try:
-            future = asyncio.open_connection(self.host, port)
-            _, writer = await asyncio.wait_for(future, timeout=self.timeout)
-            writer.close()
-            await writer.wait_closed()
-            return True
+            sock = socket.socket()
+            sock.settimeout(self.timeout)
+
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            is_open = sock.connect_ex((self.host, port)) == 0
+
+            sock.close()
+            return is_open
         except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
             return False

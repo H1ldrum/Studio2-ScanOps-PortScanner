@@ -6,6 +6,7 @@ from reporters.cli_reporter import ConsoleReporter, print_compact_list_of_ints
 from reporters.reporter import ScanReporter
 from scanners.http_port_scanner import HttpPortScanner
 from scanners.scanner import Scanner
+from scanners.socket_scanner import SocketScanner
 from scanners.tcp_scanner import TCPScanner
 
 
@@ -13,7 +14,11 @@ async def main():
     args = parse_args()
     if args.list_ports:
         print(f"Ports to scan: {print_compact_list_of_ints(args.ports)}")
-    if args.command == "http_scan" or args.command == "tcp_scan":
+    if (
+        args.command == "http_scan"
+        or args.command == "tcp_scan"
+        or args.command == "socket_scan"
+    ):
         reporter = createReporter(args)
         scanner = createScanner(args)
         if reporter:
@@ -78,7 +83,9 @@ def createScanner(args) -> Scanner:
             proxy=args.proxy,
             method=args.method,
         )
-    return TCPScanner(args.target, args.timeout_ms / 1000)
+    if args.command == "tcp_scan":
+        return TCPScanner(args.target, args.timeout_ms / 1000)
+    return SocketScanner(args.target, args.timeout_ms / 1000)
 
 
 def createReporter(args) -> ScanReporter | None:
@@ -94,6 +101,7 @@ def parse_args():
 
     http_scanner = subparsers.add_parser("http_scan", help="Scan ports over HTTP")
     subparsers.add_parser("tcp_scan", help="Scan ports over TCP")
+    subparsers.add_parser("socket_scan", help="Scan ports using sockets")
     parser.add_argument(
         "-t", "--target", required=True, help="Target IP/hostname to scan"
     )
