@@ -49,5 +49,7 @@ class URLRequest:
 
     async def get(self, url, method="HEAD"):
         async with aiohttp.ClientSession() as session:
-            async with session.request(method, url, proxy=self.proxy) as response:
+            async with session.request(
+                method, url, proxy=self.proxy, timeout=self.timeout
+            ) as response:
                 return response
