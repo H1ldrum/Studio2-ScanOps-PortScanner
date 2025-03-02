@@ -9,18 +9,18 @@ from reporters.reporter import Ports, ScanReporter
 
 
 class JsonReporter(ScanReporter):
-    def update_progress(self, current_port: int, is_open: bool | Exception) -> None:
-        super().update_progress(current_port, is_open)
+    def _update_progress_abstract(
+        self, target: str, current_port: int, is_open: bool | Exception
+    ) -> None:
+        pass
 
-    def report_start(
+    def _report_start_abstract(
         self, target: str, ports: Ports, prefix="", suffix: str = ""
     ) -> None:
-        super().report_start(target, ports, prefix, suffix)
-        self.target = target
+        pass
 
-    def report_final(self, time_taken_ms) -> None:
+    def _report_final_abstract(self, time_taken_ms) -> None:
         result = {
-            "target": self.target,
             "total_ports": self.total_ports,
             "scanned_ports_count": self.scanned_ports,
             "open_ports": self.open_ports,

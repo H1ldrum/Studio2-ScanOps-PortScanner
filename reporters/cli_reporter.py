@@ -13,28 +13,29 @@ class ConsoleReporter(ScanReporter):
         free_length = self.width - len(prefix) - len(suffix)
         print(f"{prefix}{text[:free_length]}{suffix}", end=end, flush=flush)
 
-    def update_progress(self, current_port: int, is_open: bool | Exception) -> None:
-        super().update_progress(current_port, is_open)
+    def _update_progress_abstract(
+        self, target, current_port: int, is_open: bool | Exception
+    ) -> None:
+        # super().update_progress(target, current_port, is_open)
         self.limit_output(
             f"\rScanning: {self.scanned_ports}/{self.total_ports} ports | Open: {len(self.open_ports)} {self.last_error}",
             end="",
             flush=True,
         )
 
-    def report_start(
+    def _report_start_abstract(
         self, target: str, ports: List[int], prefix="", suffix: str = ""
     ) -> None:
-        super().report_start(target, ports, prefix, suffix)
-        print(
-            f"{prefix}Starting scan on {target} for {self.total_ports} ports {suffix}"
-        )
+        # super().report_start(target, ports, prefix, suffix)
+        print(f"{prefix}Starting scan on {target} for {len(ports)} ports {suffix}")
 
-    def report_final(self, time_taken) -> None:
-        print(
-            f"\rFound {len(self.open_ports)} open ports: {print_compact_list_of_ints(self.open_ports)} in {time_taken:.3f}ms\n",
-            end="",
-            flush=True,
-        )
+    def _report_final_abstract(self, time_taken) -> None:
+        print(f"\rCompleted scan in {time_taken:.3f}s\n", end="", flush=True)
+        for target in self.open_ports:
+            open_ports = self.open_ports[target]
+            print(
+                f"Found {len(open_ports)} open ports on {target}: {print_compact_list_of_ints(open_ports)}"
+            )
         if len(self.errors) > 0:
             total = sum(len(v) for v in self.errors.values())
             print(

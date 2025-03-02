@@ -1,8 +1,14 @@
+ip := "192.168.38.163"
+portRange := "8000-9000"
+openPort := "8080"
+closedPort := "30238"
+
+
 benchmark:
 	hyperfine \
-		'python main.py -t 127.1 --reporter None -p "1-10000" tcp_scan' \
-		'python main.py -t 127.1 --reporter None -p "1-10000" socket_scan' \
-		'python main.py -t 127.1 --reporter None -p "1-10000" http_scan'
+		"python main.py -t $(ip) --reporter None -p $(portRange) socket_scan" \
+		"python main.py -t $(ip) --reporter None -p $(portRange) tcp_scan" \
+		"python main.py -t $(ip) --reporter None -p $(portRange) http_scan" 
 
 
 .PHONY: benchmark
