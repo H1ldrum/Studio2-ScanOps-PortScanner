@@ -217,9 +217,9 @@ def _parse_target_list(range_str) -> list[str]:
         startWithPrefix, endStr = map(str, range_str.split("-"))
         prefix, startStr = startWithPrefix.rsplit(".", 1)
         start = int(startStr)
-        end = int(endStr)
+        end = int(endStr) + 1
 
-        return [prefix + "." + str(x) for x in range(start, end + 1)]
+        return [prefix + "." + str(x) for x in range(start, end)]
 
     else:
         return [range_str]
@@ -228,6 +228,8 @@ def _parse_target_list(range_str) -> list[str]:
 def parse_int_list(range_str) -> list[int]:
     if range_str == "":
         return []
+    if range_str == "-":
+        return list(range(0, 65535))
     return _parse_int_list(range_str.replace(" ", ""))
 
 
@@ -235,13 +237,25 @@ def _parse_int_list(range_str) -> list[int]:
     if range_str == "":
         return []
     if "," in range_str:
-        return [x for p in range_str.split(",") for x in _parse_int_list(p)]
+        return [
+            portInRange(x) for p in range_str.split(",") for x in _parse_int_list(p)
+        ]
     elif "-" in range_str:
         start, end = map(int, range_str.split("-"))
+        portInRange(start)
+        portInRange(end + 1)
         return list(range(start, end + 1))
 
     else:
-        return [int(range_str)]
+        return [portInRange(int(range_str))]
+
+
+def portInRange(port: int):
+    if port < 0:
+        raise ValueError(f"value cannot be below zero, received {port}")
+    if port > 65535:
+        raise ValueError(f"value cannot be below above 65535, received {port}")
+    return port
 
 
 if __name__ == "__main__":

@@ -17,8 +17,11 @@ class ConsoleReporter(ScanReporter):
         self, target, current_port: int, is_open: bool | Exception
     ) -> None:
         # super().update_progress(target, current_port, is_open)
+        total_count = sum(
+            len(list_of_ports) for list_of_ports in self.open_ports.values()
+        )
         self.limit_output(
-            f"\rScanning: {self.scanned_ports}/{self.total_ports} ports | Open: {len(self.open_ports)} {self.last_error}",
+            f"\rScanning: {self.scanned_ports}/{self.total_ports} ports | Open: {total_count} {self.last_error}",
             end="",
             flush=True,
         )
@@ -30,7 +33,14 @@ class ConsoleReporter(ScanReporter):
         print(f"{prefix}Starting scan on {target} for {len(ports)} ports {suffix}")
 
     def _report_final_abstract(self, time_taken) -> None:
-        print(f"\rCompleted scan in {time_taken:.3f}s\n", end="", flush=True)
+        total_count = sum(
+            len(list_of_ports) for list_of_ports in self.open_ports.values()
+        )
+        print(
+            f"\rCompleted scan of {len(self.open_ports)} targets with {self.scanned_ports} total ports scanned, of which {total_count} are open in in {time_taken:.3f}s\n",
+            end="",
+            flush=True,
+        )
         for target in self.open_ports:
             open_ports = self.open_ports[target]
             print(
