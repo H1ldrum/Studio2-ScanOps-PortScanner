@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+from socket import gethostbyname
 from time import perf_counter
 from typing import OrderedDict
 
@@ -10,7 +11,6 @@ from reporters.json_reporter import JsonReporter
 from reporters.reporter import ScanReporter
 from scanners.http_port_scanner import HttpPortScanner
 from scanners.scanner import Scanner
-
 # from scanners.scapy_scanner import ScapyScanner
 from scanners.socket_scanner import SocketScanner
 from scanners.tcp_scanner import TCPScanner
@@ -203,9 +203,16 @@ def parse_target_list(range_str) -> list[str]:
     return list(
         # remove deuplicates
         OrderedDict.fromkeys(
-            ip for cidr in target_input for ip in parse_cidr_to_ip_list(cidr)
+            ip for cidr in target_input for ip in parse_cidr_to_ip_list(to_ip(cidr))
         )
     )
+
+
+def to_ip(iporhostname: str) -> str:
+    ip = gethostbyname(iporhostname)
+    if ip != iporhostname:
+        print(f"{iporhostname} resolved to {ip}")
+    return ip
 
 
 def _parse_target_list(range_str) -> list[str]:
