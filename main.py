@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+from os import getuid
 from socket import gethostbyname
 from time import perf_counter
 from typing import OrderedDict
@@ -9,10 +10,10 @@ from network_mapping.utils import parse_cidr_to_ip_list
 from reporters.cli_reporter import ConsoleReporter, print_compact_list_of_ints
 from reporters.json_reporter import JsonReporter
 from reporters.reporter import ScanReporter
+from scanners.connect_scanner import ConnectScanner
 from scanners.http_port_scanner import HttpPortScanner
 from scanners.scanner import Scanner
-# from scanners.scapy_scanner import ScapyScanner
-from scanners.socket_scanner import SocketScanner
+from scanners.scapy_scanner import ScapyScanner
 from scanners.tcp_scanner import TCPScanner
 
 
@@ -20,59 +21,54 @@ async def main():
     args = parse_args()
     if args.list_ports:
         print(f"Ports to scan: {print_compact_list_of_ints(args.ports)}")
-    if (
-        args.command == "http_scan"
-        or args.command == "tcp_scan"
-        or args.command == "socket_scan"
-        # or args.command == "scapy_scan"
-    ):
-        targets: list[str] = args.target
+    targets: list[str] = args.target
 
-        if not args.disable_host_discover:
-            count = len(targets)
-            print(f"Checking if {count} targets are up")
-            targets = Pinger().get_up_hosts(targets)
-            print(f"{len(targets)}/{count} targets are up")
+    if not args.disable_host_discover:
+        count = len(targets)
+        print(f"Checking if {count} targets are up")
+        targets = Pinger().get_up_hosts(targets)
+        print(f"{len(targets)}/{count} targets are up")
 
-        if args.list_targets:
-            print(f"targets to scan: \n{'\n'.join(targets)}")
-            exit(0)
+    if args.list_targets:
+        print(f"targets to scan: \n{'\n'.join(targets)}")
+        exit(0)
 
-        print(f"Scanning {len(targets)} targets")
-        tasks = []
-        reporter = createReporter(args)
-        for target in targets:
-            scanner = createScanner(args, target)
-            if reporter:
-                reporter.report_start(
-                    target,
-                    args.ports,
-                    prefix=type(scanner).__name__ + " ",
-                    suffix=f"concurrency={args.concurrent} timeout={args.timeout_ms}ms",
-                )
-
-            semaphore = asyncio.Semaphore(args.concurrent)
-
-            async def scan_and_collect(port, target, scanner):
-                async with semaphore:
-                    is_open = await scanner.scan_port(port)
-                    if reporter:
-                        reporter.update_progress(target, port, is_open)
-                    return is_open
-
-            for p in args.ports:
-                tasks.append(scan_and_collect(p, target, scanner))
-
-        start = perf_counter()
-        print(f"waiting for {len(tasks)} tasks")
-        await asyncio.gather(*tasks)
-        elapsed = perf_counter() - start
-
+    print(f"Scanning {len(targets)} targets")
+    tasks = []
+    endTasks = []
+    reporter = createReporter(args)
+    for target in targets:
+        scanner = createScanner(args, target)
         if reporter:
-            reporter.report_final(elapsed)
-    else:
-        print(f"Unknown command {args.command}")
-        exit(1)
+            reporter.report_start(
+                target,
+                args.ports,
+                prefix=type(scanner).__name__ + " ",
+                suffix=f"concurrency={args.concurrent} timeout={args.timeout_ms}ms",
+            )
+
+        semaphore = asyncio.Semaphore(args.concurrent)
+
+        async def scan_and_collect(port, target, scanner):
+            async with semaphore:
+                is_open = await scanner.scan_port(port)
+                if reporter:
+                    reporter.update_progress(target, port, is_open)
+                return is_open
+
+        for p in args.ports:
+            tasks.append(scan_and_collect(p, target, scanner))
+        endTasks.append(scanner.end)
+
+    start = perf_counter()
+    print(f"waiting for {len(tasks)} tasks")
+    await asyncio.gather(*tasks)
+    elapsed = perf_counter() - start
+    for t in endTasks:
+        await t()
+
+    if reporter:
+        reporter.report_final(elapsed)
 
 
 commonPorts = {
@@ -110,9 +106,17 @@ def createScanner(args, target: str) -> Scanner:
         )
     if args.command == "tcp_scan":
         return TCPScanner(target, args.timeout_ms / 1000)
-    # if args.command == "scapy_scan":
-    #     return ScapyScanner(target, args.timeout_ms / 1000)
-    return SocketScanner(target, args.timeout_ms / 1000)
+    if args.command == "connect_scan":
+        return ConnectScanner(target, args.timeout_ms / 1000)
+    if args.command == "syn_scan":
+        if getuid() != 0:
+            raise Exception("Using syn_scan requrires root")
+        return ScapyScanner(target, args.timeout_ms / 1000)
+    if args.command is None:
+        if getuid() == 0:
+            return ScapyScanner(target, args.timeout_ms / 1000)
+        return ConnectScanner(target, args.timeout_ms / 1000)
+    raise Exception(f"Unknown command {args.command}")
 
 
 def createReporter(args) -> ScanReporter | None:
@@ -130,7 +134,8 @@ def parse_args():
 
     http_scanner = subparsers.add_parser("http_scan", help="Scan ports over HTTP")
     subparsers.add_parser("tcp_scan", help="Scan ports over TCP")
-    subparsers.add_parser("scapy_scan", help="Scan ports over TCP")
+    subparsers.add_parser("connect_scan", help="Scan ports using connect")
+    subparsers.add_parser("syn_scan", help="Scan ports using SYN (stealth, half-open)")
     subparsers.add_parser("socket_scan", help="Scan ports using sockets")
     parser.add_argument(
         "-t",
@@ -209,10 +214,13 @@ def parse_target_list(range_str) -> list[str]:
 
 
 def to_ip(iporhostname: str) -> str:
-    ip = gethostbyname(iporhostname)
-    if ip != iporhostname:
-        print(f"{iporhostname} resolved to {ip}")
-    return ip
+    try:
+        ip = gethostbyname(iporhostname)
+        if ip != iporhostname:
+            print(f"{iporhostname} resolved to {ip}")
+        return ip
+    except:  # noqa: E722
+        return iporhostname
 
 
 def _parse_target_list(range_str) -> list[str]:

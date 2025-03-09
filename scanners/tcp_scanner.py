@@ -17,3 +17,6 @@ class TCPScanner(Scanner):
             return True
         except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
             return False
+
+    async def end(self):
+        pass

@@ -41,6 +41,9 @@ class HttpPortScanner(Scanner):
         except (asyncio.TimeoutError, Exception) as e:
             return e
 
+    async def end(self):
+        pass
+
 
 class URLRequest:
     def __init__(self, proxy: str = "", timeout: aiohttp.ClientTimeout | None = None):

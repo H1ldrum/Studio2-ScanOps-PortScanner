@@ -4,7 +4,7 @@ import socket
 from scanners.scanner import Scanner
 
 
-class SocketScanner(Scanner):
+class ConnectScanner(Scanner):
     def __init__(self, host: str, timeout: float = 1.0):
         self.host = host
         self.timeout = timeout
@@ -22,3 +22,6 @@ class SocketScanner(Scanner):
             return is_open
         except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
             return False
+
+    async def end(self):
+        pass
