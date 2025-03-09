@@ -1,11 +1,15 @@
 import argparse
 import asyncio
-from os import getuid
+from platform import platform
 from socket import gethostbyname
 from time import perf_counter
 from typing import OrderedDict
 
-from network_mapping.ping import Pinger
+import prctl
+
+from network_mapping.ping import CmdPinger
+from network_mapping.pinger import Pinger
+from network_mapping.scapy_ping import ScapyPinger
 from network_mapping.utils import parse_cidr_to_ip_list
 from reporters.cli_reporter import ConsoleReporter, print_compact_list_of_ints
 from reporters.json_reporter import JsonReporter
@@ -26,7 +30,8 @@ async def main():
     if not args.disable_host_discover:
         count = len(targets)
         print(f"Checking if {count} targets are up")
-        targets = Pinger().get_up_hosts(targets)
+        pinger = createPinger(args)
+        targets = pinger.get_up_hosts(targets, max_timeout=args.timeout_ms / 1000)
         print(f"{len(targets)}/{count} targets are up")
 
     if args.list_targets:
@@ -49,15 +54,30 @@ async def main():
 
         semaphore = asyncio.Semaphore(args.concurrent)
 
-        async def scan_and_collect(port, target, scanner):
-            async with semaphore:
-                is_open = await scanner.scan_port(port)
-                if reporter:
-                    reporter.update_progress(target, port, is_open)
-                return is_open
+        if scanner.has_multi_scan():
 
-        for p in args.ports:
-            tasks.append(scan_and_collect(p, target, scanner))
+            async def scan_and_collect_multi(ports, target, scanner):
+                async with semaphore:
+                    open_ports = await scanner.scan_ports(
+                        ports, reporter.update_progress
+                    )
+                    # for p in open_ports:
+                    #     reporter.update_progress(target, p, True)
+                    #     pass
+
+            for ports in chunks(list(args.ports), args.concurrent):
+                tasks.append(scan_and_collect_multi(ports, target, scanner))
+        else:
+
+            async def scan_and_collect(port, target, scanner):
+                async with semaphore:
+                    is_open = await scanner.scan_port(port)
+                    if reporter:
+                        reporter.update_progress(target, port, is_open)
+                    return is_open
+
+            for p in args.ports:
+                tasks.append(scan_and_collect(p, target, scanner))
         endTasks.append(scanner.end)
 
     start = perf_counter()
@@ -69,6 +89,12 @@ async def main():
 
     if reporter:
         reporter.report_final(elapsed)
+
+
+def chunks(items, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(items), n):
+        yield items[i : i + n]
 
 
 commonPorts = {
@@ -94,6 +120,13 @@ commonPorts = {
 }
 
 
+def createPinger(args) -> Pinger:
+    # The ScapyPinger is really slow, for unknown reason
+    # if canRunSynScan():
+    #     return ScapyPinger()
+    return CmdPinger()
+
+
 def createScanner(args, target: str) -> Scanner:
     if args.command == "http_scan":
         return HttpPortScanner(
@@ -109,11 +142,9 @@ def createScanner(args, target: str) -> Scanner:
     if args.command == "connect_scan":
         return ConnectScanner(target, args.timeout_ms / 1000)
     if args.command == "syn_scan":
-        if getuid() != 0:
-            raise Exception("Using syn_scan requrires root")
         return ScapyScanner(target, args.timeout_ms / 1000)
     if args.command is None:
-        if getuid() == 0:
+        if canRunSynScan():
             return ScapyScanner(target, args.timeout_ms / 1000)
         return ConnectScanner(target, args.timeout_ms / 1000)
     raise Exception(f"Unknown command {args.command}")
@@ -273,5 +304,14 @@ def portInRange(port: int):
     return port
 
 
+def canRunSynScan() -> bool | None:
+    system = platform().lower()
+    if "linux" in system:
+        has_cap_net_raw = prctl.cap_effective.net_raw
+        return has_cap_net_raw
+    return None
+
+
 if __name__ == "__main__":
+    canRunSynScan()
     asyncio.run(main())

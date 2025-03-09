@@ -1,18 +1,17 @@
 import statistics
-import subprocess
 import time
 from platform import platform
 from typing import List, Optional, Tuple
 
+from scapy.all import conf, sr1
+from scapy.layers.inet import ICMP, IP
+
 from network_mapping.pinger import Pinger
 
-"""
-Uses the standard ping-call.
-We should implement a ICMP-pinger, but it requires sudo
-"""
+conf.verb = 0
 
 
-class CmdPinger(Pinger):
+class ScapyPinger(Pinger):
     def __init__(self) -> None:
         self.default_timeout = 1.0
         self.system = platform().lower()
@@ -24,41 +23,14 @@ class CmdPinger(Pinger):
 
     def ping(self, host: str, timeout: Optional[float]) -> Tuple[bool, Optional[float]]:
         start_time = time.time()
-        command = ["ping", self.param, "1"]
-
-        if timeout is not None:
-            if self.system == "windows":
-                command.append("-w")
-                command.append(str(int(timeout * 1000)))
-            else:
-                command.append("-W")
-                command.append(str(timeout))
-        command.append(host)
-
-        try:
-            result = subprocess.run(
-                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-            )
-            is_up = result.returncode == 0
-
-            end_time = time.time()
-            response_time = (end_time - start_time) * 1000  # Convert to ms
-
-            if is_up and result.stdout:
-                for line in result.stdout.splitlines():
-                    if "time=" in line or "time<" in line:
-                        try:
-                            time_part = line.split("time=")[-1].split()[0].strip()
-                            if "ms" in time_part:
-                                time_part = time_part.replace("ms", "")
-                            response_time = float(time_part)
-                            break
-                        except (ValueError, IndexError):
-                            pass
-
-            return is_up, response_time if is_up else None
-        except Exception:
-            return False, None
+        icmp = IP(dst=host) / ICMP()
+        resp = sr1(icmp, timeout=timeout)
+        print(f"ping? {host} {resp} {timeout}")
+        if resp is None:
+            return (False, None)
+        end_time = time.time()
+        response_time = (end_time - start_time) * 1000  # Convert to ms
+        return (True, response_time)
 
     def get_up_hosts(
         self,

@@ -1,9 +1,11 @@
-import os
+from typing import Callable, List
 
-from scapy.all import RandShort, conf, sr1
+from scapy.all import RandShort, conf, sr, sr1
 from scapy.layers.inet import IP, TCP
 
 from scanners.scanner import Scanner
+
+conf.verb = 0
 
 SYNACK = 0x12  # Set flag values for later reference
 RSTACK = 0x14
@@ -16,11 +18,6 @@ class ScapyScanner(Scanner):
 
     async def scan_port(self, port: int) -> bool:
         srcport = RandShort()
-        # Add filter to prevent kernel RST
-        os.system(
-            f"iptables -A OUTPUT -p tcp --tcp-flags RST RST -s {self.host} -j DROP"
-        )  # noqa: F821
-        # print(f"scanning {self.host}:{port} with port {srcport}")
 
         try:
             SYNACKpkt = sr1(
@@ -33,14 +30,23 @@ class ScapyScanner(Scanner):
             return False
 
         finally:
-            # Remove the filter
-            os.system(
-                f"iptables -D OUTPUT -p tcp --tcp-flags RST RST -s {self.host} -j DROP"
-            )
-            # RSTpkt = IP(dst=target) / TCP(
-            #     sport=srcport, dport=port, flags="R"
-            # )  # Construct RST packet
-            # send(RSTpkt)  # Send RST packet
+            pass
+
+    async def scan_ports(
+        self, ports: List[int], update_progress: Callable[[str, int, bool | None], None]
+    ):
+        p = IP(dst=self.host) / TCP(dport=ports, flags="S")
+        packetPairsWithAnswers, _ = sr(p, timeout=1)
+        for req, resp in packetPairsWithAnswers:
+            if not resp.haslayer(TCP):
+                continue
+            tcp = resp.getlayer(TCP)
+            if tcp.flags == SYNACK:
+                update_progress(self.host, tcp.sport, True)
+            elif tcp.flags != RSTACK:
+                update_progress(self.host, tcp.sport, False)
+                print("unknown flag", tcp.flags, tcp.sport)
+            update_progress(self.host, tcp.sport, None)
 
     async def end(self):
         print("end")
