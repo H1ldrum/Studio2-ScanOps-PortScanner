@@ -26,8 +26,9 @@ class ConnectScanner(Scanner):
 
             try:
                 sock.send(self.message_bytes)
-                results = sock.recv(100)
-                print(f"GOT {port} '{results}'")
+                results = sock.recv(1000).decode(errors="ignore").strip()
+                if results:
+                    print(f"GOT {port} '{results}'")
             except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
                 return True
             return True

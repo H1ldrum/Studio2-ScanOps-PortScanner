@@ -58,12 +58,7 @@ async def main():
 
             async def scan_and_collect_multi(ports, target, scanner):
                 async with semaphore:
-                    open_ports = await scanner.scan_ports(
-                        ports, reporter.update_progress
-                    )
-                    # for p in open_ports:
-                    #     reporter.update_progress(target, p, True)
-                    #     pass
+                    open_ports = await scanner.scan_ports(ports, reporter)
 
             for ports in chunks(list(args.ports), args.concurrent):
                 tasks.append(scan_and_collect_multi(ports, target, scanner))
@@ -168,6 +163,12 @@ def parse_args():
     subparsers.add_parser("connect_scan", help="Scan ports using connect")
     subparsers.add_parser("syn_scan", help="Scan ports using SYN (stealth, half-open)")
     subparsers.add_parser("socket_scan", help="Scan ports using sockets")
+    parser.add_argument(
+        "-o"  # Same as with nmap
+        "--os-detection",  # Possible shortname if needed
+        action="store_true",
+        help="Enable OS detection based on TTL values",
+    )
     parser.add_argument(
         "-t",
         "--target",

@@ -4,6 +4,7 @@ from typing import Dict, List
 
 # Define Ports type
 Ports = List[int]
+TTLs = List[int]
 
 
 class ScanReporter(ABC):
@@ -16,7 +17,16 @@ class ScanReporter(ABC):
         self.last_error = ""
         self.open_ports: Dict[str, Ports] = {}
         self.errors: Dict[str, Ports] = {}
+        ### Dic<port, ttl>
+        self.ttls: Dict[str, TTLs] = {}
 
+    def report_ttl(self, target: str, current_port: int, ttl: int):
+        with self._lock:
+            if target in self.ttls and ttl not in self.ttls[target]:
+                self.ttls[target].append(ttl)
+            else:
+                self.ttls[target] = [ttl]
+        
     def update_progress(
         self, target: str, current_port: int, is_open: bool | Exception
     ) -> None:

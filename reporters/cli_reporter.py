@@ -1,6 +1,7 @@
 import shutil
 from typing import List
 
+from osdetection.osdetect import OSDetector
 from reporters.reporter import ScanReporter
 
 
@@ -54,6 +55,14 @@ class ConsoleReporter(ScanReporter):
             for error_name, ports in self.errors.items():
                 print(
                     f"\t Error {error_name} occurred on ports: {print_compact_list_of_ints(ports)}"
+                )
+        if self.ttls:
+            for target, ttls in self.ttls.items():
+                detected_os_list = [
+                    f"{OSDetector.lookup_os_from_ttl(ttl)} ({ttl})" for ttl in ttls
+                ]
+                print(
+                    f"Based on ttl-values, it looks like the target {target} could be one of: {detected_os_list}"
                 )
 
 

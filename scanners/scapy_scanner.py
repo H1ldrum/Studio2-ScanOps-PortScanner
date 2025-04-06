@@ -3,6 +3,7 @@ from typing import Callable, List
 from scapy.all import RandShort, conf, sr, sr1
 from scapy.layers.inet import IP, TCP
 
+from reporters.reporter import ScanReporter
 from scanners.scanner import Scanner
 
 conf.verb = 0
@@ -32,21 +33,22 @@ class ScapyScanner(Scanner):
         finally:
             pass
 
-    async def scan_ports(
-        self, ports: List[int], update_progress: Callable[[str, int, bool | None], None]
-    ):
+    async def scan_ports(self, ports: List[int], reporter: ScanReporter):
         p = IP(dst=self.host) / TCP(dport=ports, flags="S")
         packetPairsWithAnswers, _ = sr(p, timeout=1)
         for req, resp in packetPairsWithAnswers:
             if not resp.haslayer(TCP):
                 continue
             tcp = resp.getlayer(TCP)
+            if resp.ttl:
+                reporter.report_ttl(self.host, tcp.sport, resp.ttl)
             if tcp.flags == SYNACK:
-                update_progress(self.host, tcp.sport, True)
-            elif tcp.flags != RSTACK:
-                update_progress(self.host, tcp.sport, False)
+                reporter.update_progress(self.host, tcp.sport, True)
+            elif tcp.flags == RSTACK:
+                reporter.update_progress(self.host, tcp.sport, False)
+            else:
                 print("unknown flag", tcp.flags, tcp.sport)
-            update_progress(self.host, tcp.sport, None)
+                reporter.update_progress(self.host, tcp.sport, None)
 
     async def end(self):
         print("end")

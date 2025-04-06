@@ -5,6 +5,7 @@ from pygments import highlight
 from pygments.formatters import TerminalFormatter
 from pygments.lexers import JsonLexer
 
+from osdetection.osdetect import OSDetector
 from reporters.reporter import Ports, ScanReporter
 
 
@@ -27,6 +28,14 @@ class JsonReporter(ScanReporter):
             "errors": self.errors,
             "last_error": self.last_error,
             "time_ms": time_taken_ms,
+            "os_detection": {
+                target: (
+                    f"{OSDetector.lookup_os_from_ttl(ttl_list[0])} ({ttl_list[0]})"
+                    if ttl_list
+                    else "Unknown (No TTL)"
+                )
+                for target, ttl_list in self.ttls.items()
+            },
         }
         json_str = json.dumps(result, indent=2)
         if not sys.stdout.isatty():
