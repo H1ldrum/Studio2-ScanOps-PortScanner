@@ -15,14 +15,14 @@ class ConsoleReporter(ScanReporter):
         print(f"{prefix}{text[:free_length]}{suffix}", end=end, flush=flush)
 
     def _update_progress_abstract(
-        self, target, current_port: int, is_open: bool | Exception
+        self, target, current_port: int, is_open: bool | Exception | None
     ) -> None:
         # super().update_progress(target, current_port, is_open)
-        total_count = sum(
+        total_open = sum(
             len(list_of_ports) for list_of_ports in self.open_ports.values()
         )
         self.limit_output(
-            f"\rScanning: {self.scanned_ports}/{self.total_ports} ports | Open: {total_count} {self.last_error}",
+            f"\rScanning: {self.scanned_ports}/{self.total_ports} ports | Open: {total_open} last_error={self.last_error}",
             end="",
             flush=True,
         )

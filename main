@@ -1,0 +1,1 @@
+sudo ./.venv-python/bin/python main.py "$@"

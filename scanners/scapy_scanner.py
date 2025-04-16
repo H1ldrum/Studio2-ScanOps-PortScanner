@@ -35,11 +35,22 @@ class ScapyScanner(Scanner):
 
     async def scan_ports(self, ports: List[int], reporter: ScanReporter):
         p = IP(dst=self.host) / TCP(dport=ports, flags="S")
-        packetPairsWithAnswers, _ = sr(p, timeout=1)
+        packetPairsWithAnswers, packetPairsWithoutAnswers = sr(p, timeout=self.timeout)
+        for req in packetPairsWithoutAnswers:
+            print("unanswered", req)
+            if req.haslayer(TCP):
+                port = req.getlayer(TCP).dport
+                print(f"unanswered port: {port}")
+                if reporter:
+                    reporter.update_progress(self.host, port, False)
+            else:
+                print("what?")
         for req, resp in packetPairsWithAnswers:
             if not resp.haslayer(TCP):
                 continue
             tcp = resp.getlayer(TCP)
+            if reporter is None:
+                continue
             if resp.ttl:
                 reporter.report_ttl(self.host, tcp.sport, resp.ttl)
             if tcp.flags == SYNACK:
@@ -48,7 +59,9 @@ class ScapyScanner(Scanner):
                 reporter.update_progress(self.host, tcp.sport, False)
             else:
                 print("unknown flag", tcp.flags, tcp.sport)
-                reporter.update_progress(self.host, tcp.sport, None)
+                reporter.update_progress(
+                    self.host, tcp.sport, Exception("unknown flag")
+                )
 
     async def end(self):
         print("end")

@@ -60,8 +60,12 @@ async def main():
                 async with semaphore:
                     open_ports = await scanner.scan_ports(ports, reporter)
 
+            n = len(tasks)
             for ports in chunks(list(args.ports), args.concurrent):
                 tasks.append(scan_and_collect_multi(ports, target, scanner))
+            print(
+                f"Chunking {len(args.ports)} port-scans into {len(tasks) - n} tasks due to concurrency={args.concurrent}"
+            )
         else:
 
             async def scan_and_collect(port, target, scanner):
@@ -205,7 +209,7 @@ def parse_args():
         help="Prints the targets supplied",
     )
     parser.add_argument(
-        "-", "--timeout_ms", type=int, default=3000, help="Timeout in ms."
+        "-", "--timeout_ms", type=int, default=1000, help="Timeout in ms."
     )
     parser.add_argument(
         "--reporter", default="text", help="json, None or text (default)"
@@ -290,8 +294,8 @@ def _parse_int_list(range_str) -> list[int]:
     elif "-" in range_str:
         start, end = map(int, range_str.split("-"))
         portInRange(start)
-        portInRange(end + 1)
-        return list(range(start, end + 1))
+        portInRange(end)
+        return list(range(start, end))
 
     else:
         return [portInRange(int(range_str))]
@@ -301,6 +305,7 @@ def portInRange(port: int):
     if port < 0:
         raise ValueError(f"value cannot be below zero, received {port}")
     if port > 65535:
+        print("port", port)
         raise ValueError(f"value cannot be below above 65535, received {port}")
     return port
 

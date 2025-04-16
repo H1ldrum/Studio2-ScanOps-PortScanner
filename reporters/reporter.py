@@ -16,6 +16,8 @@ class ScanReporter(ABC):
         self.scanned_ports = 0
         self.last_error = ""
         self.open_ports: Dict[str, Ports] = {}
+        self.closed_ports: Dict[str, Ports] = {}
+        self.filtered_ports: Dict[str, Ports] = {}
         self.errors: Dict[str, Ports] = {}
         ### Dic<port, ttl>
         self.ttls: Dict[str, TTLs] = {}
@@ -26,9 +28,9 @@ class ScanReporter(ABC):
                 self.ttls[target].append(ttl)
             else:
                 self.ttls[target] = [ttl]
-        
+
     def update_progress(
-        self, target: str, current_port: int, is_open: bool | Exception
+        self, target: str, current_port: int, is_open: bool | Exception | None
     ) -> None:
         with self._lock:
             self.scanned_ports += 1
@@ -39,8 +41,12 @@ class ScanReporter(ABC):
                     self.errors[error_name] = []
                 self.errors[error_name].append(current_port)
                 self.last_error = f"Last error {error_name} on {current_port}"
+            elif is_open is None:
+                self.filtered_ports[target].append(current_port)
             elif is_open:
                 self.open_ports[target].append(current_port)
+            elif not is_open:
+                self.closed_ports[target].append(current_port)
 
             # Call the abstract implementation within the lock
             self._update_progress_abstract(target, current_port, is_open)
@@ -53,6 +59,8 @@ class ScanReporter(ABC):
             self.scanned_ports = 0
             self.last_error = ""
             self.open_ports[target] = []
+            self.filtered_ports[target] = []
+            self.closed_ports[target] = []
             self.errors = {}
 
             self._report_start_abstract(target, ports, prefix, suffix)
@@ -63,7 +71,7 @@ class ScanReporter(ABC):
 
     @abstractmethod
     def _update_progress_abstract(
-        self, target: str, current_port: int, is_open: bool | Exception
+        self, target: str, current_port: int, is_open: bool | Exception | None
     ) -> None:
         pass
 
