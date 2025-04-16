@@ -9,8 +9,8 @@ class HttpPortScanner(Scanner):
     def __init__(
         self,
         target: str,
-        proxy: str = "",
-        method="HEAD",
+        proxy: str | None = "",
+        method: str | None = "HEAD",
         timeout_ms: int = 3000,
         status_code_filter: range | list[int] = [],
         status_code_ignore_filter: range | list[int] = [],
@@ -21,14 +21,14 @@ class HttpPortScanner(Scanner):
         self.status_code_ignore_filter = status_code_ignore_filter
 
         self.req = URLRequest(
-            proxy=proxy,
+            proxy=proxy or "",
             timeout=aiohttp.ClientTimeout(total=timeout_ms / 1000),
         )
 
     async def scan_port(self, port) -> bool | Exception:
         try:
             url = f"http://{self.target}:{port}"
-            response = await self.req.get(url, method=self.method)
+            response = await self.req.get(url, method=self.method or "HEAD")
             code = response.status
             if code in self.status_code_ignore_filter:
                 return False
