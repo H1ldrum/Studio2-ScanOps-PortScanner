@@ -63,6 +63,11 @@ async def PortScanner(
             async def scan_and_collect(port, target, scanner):
                 async with semaphore:
                     portStatus = await scanner.scan_port(port)
+                    retries = args.max_retries
+                    while portStatus is None and retries > 0:
+                        retries = retries - 1
+                        portStatus = await scanner.scan_port(port)
+
                     if reporter:
                         reporter.update_progress(target, port, portStatus)
                     return portStatus

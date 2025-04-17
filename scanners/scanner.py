@@ -4,7 +4,7 @@ from typing import List
 
 class Scanner(ABC):
     @abstractmethod
-    def scan_port(self, port: int) -> None:
+    def scan_port(self, port: int) -> bool | None:
         pass
 
     def scan_ports(self, ports: List[int]) -> List[int]:

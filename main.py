@@ -50,7 +50,7 @@ def createScanner(args: Args, target: str) -> Scanner:
     if args.command == "connect_scan":
         return ConnectScanner(target, args.timeout_ms / 1000)
     if args.command == "syn_scan":
-        return ScapyScanner(target, args.timeout_ms / 1000)
+        return ScapyScanner(target, args.timeout_ms / 1000, args.max_retries)
     if args.command is None:
         if canRunSynScan():
             return ScapyScanner(target, args.timeout_ms / 1000)

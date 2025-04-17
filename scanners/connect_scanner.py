@@ -11,7 +11,7 @@ class ConnectScanner(Scanner):
         message = "Hello, world!"
         self.message_bytes = message.encode("utf-8")
 
-    async def scan_port(self, port: int) -> bool:
+    async def scan_port(self, port: int) -> bool | None:
         with socket.socket() as sock:
             try:
                 sock.settimeout(self.timeout)
@@ -19,10 +19,13 @@ class ConnectScanner(Scanner):
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
                 status_code = sock.connect_ex((self.host, port))
+                print("what?", port, status_code)
+                if status_code == 11:
+                    return None
                 if status_code != 0:
                     return False
             except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
-                return False
+                return None
 
             try:
                 sock.send(self.message_bytes)

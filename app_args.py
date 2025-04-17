@@ -15,6 +15,7 @@ class Args:
     disable_host_discover: bool = False
     ports: list[int] = field(default_factory=list)
     concurrent: int = 50
+    max_retries: int = 3
     list_ports: bool = False
     list_targets: bool = False
     timeout_ms: int = 1000
@@ -102,6 +103,12 @@ def parse_args() -> Args:
     )
     parser.add_argument(
         "-", "--timeout_ms", type=int, default=1000, help="Timeout in ms."
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="For unanswered ports (timeouts), we can retry to confirm. An ananswered port is considered filtered if it never receives a reply on any of the retries",
     )
     parser.add_argument(
         "--reporter", default="text", help="json, None or text (default)"

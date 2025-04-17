@@ -44,7 +44,24 @@ async def test_scanme_syn():
         expected_open={"scanme.nmap.org": [22, 80, 9929, 31337]},
         expected_filtered={"scanme.nmap.org": [25]},
         expected_closed={"scanme.nmap.org": [6000, 6080]},
-        test_id="scanme.nmap.org reports correct ports as open/filtered/closed",
+        test_id="scanme.nmap.org reports correct ports as open/filtered/closed for connect-scan",
+    )
+    await run_port_scanner_basic(x)
+
+
+@pytest.mark.external
+async def test_scanme_connect():
+    x = PortScannerTestCase(
+        args=Args(
+            command="connect_scan",
+            target=["scanme.nmap.org"],
+            ports=[22, 25, 80, 9929, 31337, 6000, 6080],
+        ),
+        expoected_ports_scanned=7,
+        expected_open={"scanme.nmap.org": [22, 80, 9929, 31337]},
+        expected_filtered={"scanme.nmap.org": [25]},
+        expected_closed={"scanme.nmap.org": [6000, 6080]},
+        test_id="scanme.nmap.org reports correct ports as open/filtered/closed for SYN-scan",
     )
     await run_port_scanner_basic(x)
 
