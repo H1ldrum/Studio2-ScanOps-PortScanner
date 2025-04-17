@@ -47,3 +47,9 @@ class JsonReporter(ScanReporter):
 
         colored_json = highlight(json_str, JsonLexer(), TerminalFormatter())
         print(colored_json)
+
+    def debug(self, string) -> None:
+        print("DEBUG", string, file=sys.stderr)
+
+    def info(self, string) -> None:
+        print("info", string, file=sys.stderr)

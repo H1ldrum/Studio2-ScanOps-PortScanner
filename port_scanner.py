@@ -1,4 +1,5 @@
 import asyncio
+import math
 from time import perf_counter
 from typing import Callable
 
@@ -17,21 +18,21 @@ async def PortScanner(
 ):
     # args = parse_args()
     if args.list_ports:
-        print(f"Ports to scan: {stringify_compact_list_of_ints(args.ports)}")
+        reporter.info(f"Ports to scan: {stringify_compact_list_of_ints(args.ports)}")
     targets: list[str] = args.target
 
     if not args.disable_host_discover:
         count = len(targets)
-        print(f"Checking if {count} targets are up")
+        reporter.info(f"Checking if {count} targets are up")
         targets = pinger.get_up_hosts(targets, max_timeout=args.timeout_ms / 1000)
-        print(f"{len(targets)}/{count} targets are up")
+        reporter.info(f"{len(targets)}/{count} targets are up")
 
     if args.list_targets:
-        print(f"targets to scan: \n{'\n'.join(targets)}")
+        reporter.info(f"targets to scan: \n{'\n'.join(targets)}")
     if args.list_ports or args.list_targets:
         exit(0)
 
-    print(f"Scanning {len(targets)} targets")
+    reporter.info(f"Scanning {len(targets)} targets")
     tasks = []
     endTasks = []
     for target in targets:
@@ -48,15 +49,23 @@ async def PortScanner(
 
         if scanner.has_multi_scan():
 
-            async def scan_and_collect_multi(ports, target, scanner):
+            async def scan_and_collect_multi(
+                chunk, total_chunks, ports, target, scanner
+            ):
                 async with semaphore:
                     await scanner.scan_ports(ports, reporter)
+                    reporter.debug(f"completed chunk {chunk + 1}/{total_chunks}")
 
             n = len(tasks)
+            total_chunks = math.ceil(len(args.ports) / args.concurrent)
+            i = 0
             for ports in chunks(list(args.ports), args.concurrent):
-                tasks.append(scan_and_collect_multi(ports, target, scanner))
-            print(
-                f"Chunking {len(args.ports)} port-scans into {len(tasks) - n} tasks due to concurrency={args.concurrent}"
+                tasks.append(
+                    scan_and_collect_multi(i, total_chunks, ports, target, scanner)
+                )
+                i += 1
+            reporter.debug(
+                f"Chunking {len(args.ports)} port-scans into {total_chunks} tasks due to concurrency={args.concurrent}"
             )
         else:
 
@@ -77,7 +86,7 @@ async def PortScanner(
         endTasks.append(scanner.end)
 
     start = perf_counter()
-    print(f"waiting for {len(tasks)} tasks")
+    reporter.debug(f"waiting for {len(tasks)} tasks")
     await asyncio.gather(*tasks)
     elapsed = perf_counter() - start
     for t in endTasks:

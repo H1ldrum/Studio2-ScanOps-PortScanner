@@ -84,3 +84,11 @@ class ScanReporter(ABC):
     @abstractmethod
     def _report_final_abstract(self, time_taken) -> None:
         pass
+
+    @abstractmethod
+    def debug(self, string) -> None:
+        pass
+
+    @abstractmethod
+    def info(self, string) -> None:
+        pass

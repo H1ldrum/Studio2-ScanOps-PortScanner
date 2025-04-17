@@ -1,0 +1,2 @@
+GOT 22 'SSH-2.0-OpenSSH_6.6.1p1 Ubuntu-2ubuntu2.13'
+{"total_ports": 2, "scanned_ports_count": 2, "open_ports": {"45.33.32.156": [22]}, "filtered_ports": {"45.33.32.156": [25]}, "closed_ports": {"45.33.32.156": []}, "errors": {}, "last_error": "", "time_ms": 4.329439448018093, "os_detection": {}}

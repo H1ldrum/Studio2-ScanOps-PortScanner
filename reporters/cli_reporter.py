@@ -1,4 +1,5 @@
 import shutil
+from sys import stderr
 from typing import List
 
 from osdetection.osdetect import OSDetector
@@ -10,9 +11,11 @@ class ConsoleReporter(ScanReporter):
         self.width = shutil.get_terminal_size()[0]
         super().__init__()
 
-    def limit_output(self, text, prefix="", suffix="", end="", flush=False):
+    def limit_output(
+        self, text, prefix="", suffix="", end="", flush=False, file=stderr
+    ):
         free_length = self.width - len(prefix) - len(suffix)
-        print(f"{prefix}{text[:free_length]}{suffix}", end=end, flush=flush)
+        print(f"{prefix}{text[:free_length]}{suffix}", end=end, flush=flush, file=file)
 
     def _update_progress_abstract(
         self, target, current_port: int, is_open: bool | Exception | None
@@ -74,6 +77,12 @@ class ConsoleReporter(ScanReporter):
                 print(
                     f"Based on ttl-values, it looks like the target {target} could be one of: {detected_os_list}"
                 )
+
+    def debug(self, string) -> None:
+        print("\nDEBUG", string, file=stderr, flush=True)
+
+    def info(self, string) -> None:
+        print("\ninfo", string, file=stderr, flush=True)
 
 
 def compact_list_of_ints(numbers: list[int]) -> list[int]:

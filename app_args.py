@@ -1,6 +1,7 @@
 import argparse
 from dataclasses import dataclass, field
 from socket import gethostbyname
+from sys import stderr
 from typing import List, Optional, OrderedDict
 
 from network_mapping.utils import parse_cidr_to_ip_list
@@ -176,7 +177,7 @@ def to_ip(iporhostname: str) -> str:
     try:
         ip = gethostbyname(iporhostname)
         if ip != iporhostname:
-            print(f"{iporhostname} resolved to {ip}")
+            print(f"{iporhostname} resolved to {ip}", file=stderr)
         return ip
     except:  # noqa: E722
         return iporhostname

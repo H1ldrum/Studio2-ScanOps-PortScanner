@@ -1,5 +1,6 @@
 import asyncio
 import socket
+from sys import stderr
 
 from scanners.scanner import Scanner
 
@@ -19,7 +20,6 @@ class ConnectScanner(Scanner):
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
                 status_code = sock.connect_ex((self.host, port))
-                print("what?", port, status_code)
                 if status_code == 11:
                     return None
                 if status_code != 0:
@@ -31,7 +31,7 @@ class ConnectScanner(Scanner):
                 sock.send(self.message_bytes)
                 results = sock.recv(1000).decode(errors="ignore").strip()
                 if results:
-                    print(f"GOT {port} '{results}'")
+                    print(f"GOT {port} '{results}'", file=stderr)
             except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
                 return True
             return True
