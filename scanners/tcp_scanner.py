@@ -8,14 +8,16 @@ class TCPScanner(Scanner):
         self.host = host
         self.timeout = timeout
 
-    async def scan_port(self, port: int) -> bool:
+    async def scan_port(self, port: int) -> bool | None:
         try:
             future = asyncio.open_connection(self.host, port)
             _, writer = await asyncio.wait_for(future, timeout=self.timeout)
             writer.close()
             await writer.wait_closed()
             return True
-        except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
+        except asyncio.TimeoutError:
+            return None
+        except (ConnectionRefusedError, OSError):
             return False
 
     async def end(self):

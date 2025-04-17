@@ -43,9 +43,19 @@ class ConsoleReporter(ScanReporter):
             flush=True,
         )
         for target in self.open_ports:
-            open_ports = self.open_ports[target]
+            ports = self.open_ports[target]
             print(
-                f"Found {len(open_ports)} open ports on {target}: {print_compact_list_of_ints(open_ports)}"
+                f"Found {len(ports)} open ports on {target}: {stringify_compact_list_of_ints(ports)}"
+            )
+        for target in self.filtered_ports:
+            ports = self.filtered_ports[target]
+            print(
+                f"Found {len(ports)} filtered ports on {target}: {stringify_compact_list_of_ints(ports)}"
+            )
+        for target in self.closed_ports:
+            ports = self.closed_ports[target]
+            print(
+                f"Found {len(ports)} closed ports on {target}: {stringify_compact_list_of_ints(ports)}"
             )
         if len(self.errors) > 0:
             total = sum(len(v) for v in self.errors.values())
@@ -54,7 +64,7 @@ class ConsoleReporter(ScanReporter):
             )
             for error_name, ports in self.errors.items():
                 print(
-                    f"\t Error {error_name} occurred on ports: {print_compact_list_of_ints(ports)}"
+                    f"\t Error {error_name} occurred on ports: {stringify_compact_list_of_ints(ports)}"
                 )
         if self.ttls:
             for target, ttls in self.ttls.items():
@@ -66,9 +76,9 @@ class ConsoleReporter(ScanReporter):
                 )
 
 
-def print_compact_list_of_ints(numbers: list[int]) -> str:
+def compact_list_of_ints(numbers: list[int]) -> list[int]:
     if not numbers:
-        return "[]"
+        return []
 
     numbers = sorted(numbers)
     ranges = []
@@ -84,6 +94,13 @@ def print_compact_list_of_ints(numbers: list[int]) -> str:
             start = n
         prev = n
 
-    width = shutil.get_terminal_size()[0]
+        "".join(ranges)
+    return ranges
+
+
+def stringify_compact_list_of_ints(numbers: list[int]) -> str:
+    ranges = compact_list_of_ints(numbers)
     result = f"[{', '.join(ranges)}]"
+    return result
+    width = shutil.get_terminal_size()[0]
     return result[:width]

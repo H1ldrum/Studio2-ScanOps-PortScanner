@@ -196,8 +196,9 @@ def parse_int_list(range_str) -> list[int]:
     if range_str == "":
         return []
     if range_str == "-":
-        return list(range(0, 65535))
-    return _parse_int_list(range_str.replace(" ", ""))
+        return list(range(1, 65536))
+    port_list = _parse_int_list(range_str.replace(" ", ""))
+    return list(set(port_list))
 
 
 def _parse_int_list(range_str) -> list[int]:
@@ -211,16 +212,19 @@ def _parse_int_list(range_str) -> list[int]:
         start, end = map(int, range_str.split("-"))
         portInRange(start)
         portInRange(end)
-        return list(range(start, end))
+        return list(range(start, end + 1))
 
     else:
         return [portInRange(int(range_str))]
 
 
 def portInRange(port: int):
+    if port == 0:
+        print(
+            "Warning, port 0 is normally reserved by the OS, and typically cannot be assigned. Consider excluding it from the specified ports."
+        )
     if port < 0:
         raise ValueError(f"value cannot be below zero, received {port}")
     if port > 65535:
-        print("port", port)
         raise ValueError(f"value cannot be below above 65535, received {port}")
     return port

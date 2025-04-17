@@ -4,7 +4,7 @@ from typing import Callable
 
 from app_args import Args
 from network_mapping.pinger import Pinger
-from reporters.cli_reporter import print_compact_list_of_ints
+from reporters.cli_reporter import stringify_compact_list_of_ints
 from reporters.reporter import ScanReporter
 from scanners.scanner import Scanner
 
@@ -17,7 +17,7 @@ async def PortScanner(
 ):
     # args = parse_args()
     if args.list_ports:
-        print(f"Ports to scan: {print_compact_list_of_ints(args.ports)}")
+        print(f"Ports to scan: {stringify_compact_list_of_ints(args.ports)}")
     targets: list[str] = args.target
 
     if not args.disable_host_discover:
@@ -28,6 +28,7 @@ async def PortScanner(
 
     if args.list_targets:
         print(f"targets to scan: \n{'\n'.join(targets)}")
+    if args.list_ports or args.list_targets:
         exit(0)
 
     print(f"Scanning {len(targets)} targets")
@@ -49,7 +50,7 @@ async def PortScanner(
 
             async def scan_and_collect_multi(ports, target, scanner):
                 async with semaphore:
-                    open_ports = await scanner.scan_ports(ports, reporter)
+                    await scanner.scan_ports(ports, reporter)
 
             n = len(tasks)
             for ports in chunks(list(args.ports), args.concurrent):
@@ -61,10 +62,10 @@ async def PortScanner(
 
             async def scan_and_collect(port, target, scanner):
                 async with semaphore:
-                    is_open = await scanner.scan_port(port)
+                    portStatus = await scanner.scan_port(port)
                     if reporter:
-                        reporter.update_progress(target, port, is_open)
-                    return is_open
+                        reporter.update_progress(target, port, portStatus)
+                    return portStatus
 
             for p in args.ports:
                 tasks.append(scan_and_collect(p, target, scanner))

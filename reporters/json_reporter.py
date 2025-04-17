@@ -6,6 +6,7 @@ from pygments.formatters import TerminalFormatter
 from pygments.lexers import JsonLexer
 
 from osdetection.osdetect import OSDetector
+from reporters.cli_reporter import compact_list_of_ints, stringify_compact_list_of_ints
 from reporters.reporter import Ports, ScanReporter
 
 
@@ -25,6 +26,8 @@ class JsonReporter(ScanReporter):
             "total_ports": self.total_ports,
             "scanned_ports_count": self.scanned_ports,
             "open_ports": self.open_ports,
+            "filtered_ports": self.filtered_ports,
+            "closed_ports": self.closed_ports,
             "errors": self.errors,
             "last_error": self.last_error,
             "time_ms": time_taken_ms,
@@ -37,7 +40,7 @@ class JsonReporter(ScanReporter):
                 for target, ttl_list in self.ttls.items()
             },
         }
-        json_str = json.dumps(result, indent=2)
+        json_str = json.dumps(result)
         if not sys.stdout.isatty():
             print(json_str)
             return
