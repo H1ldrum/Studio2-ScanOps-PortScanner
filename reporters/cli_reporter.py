@@ -1,4 +1,6 @@
+import math
 import shutil
+from statistics import mean
 from sys import stderr, stdout
 from typing import List
 
@@ -49,6 +51,10 @@ class ConsoleReporter(ScanReporter):
             flush=True,
             file=stdout,
         )
+        for target, d in self.response_time.items():
+            all_times = list(d.values())
+            average = sum(all_times) / len(all_times)
+            print(f"Average response-time for {target}: {average:.2f} ms, max={max(all_times):.2f} ms, mean={mean(all_times):.2f} ms,  min={min(all_times):.2f} ms, based on {len(all_times)} entries")
         for target in self.open_ports:
             ports = self.open_ports[target]
             with_banners = {k: v for k, v in ports.items() if v}

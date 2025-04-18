@@ -18,6 +18,7 @@ class ScanReporter(ABC):
         self.scanned_ports = 0
         self.last_error = ""
         self.open_ports: Dict[str, Dict[int, str]] = {}
+        self.response_time: Dict[str, Dict[int, float]] = {}
         self.closed_ports: Dict[str, Ports] = {}
         self.filtered_ports: Dict[str, Ports] = {}
         self.errors: Dict[str, Ports] = {}
@@ -35,10 +36,14 @@ class ScanReporter(ABC):
         self,
         target: str,
         current_port: int,
+        response_time: float,
         status_banner: bool | str | Exception | None,
     ) -> None:
         with self._lock:
             self.scanned_ports += 1
+
+            if response_time:
+                self.response_time[target][current_port] = response_time
 
             if isinstance(status_banner, Exception):
                 error_name = status_banner.__class__.__name__
@@ -74,6 +79,7 @@ class ScanReporter(ABC):
             self.open_ports[target] = {}
             self.filtered_ports[target] = []
             self.closed_ports[target] = []
+            self.response_time[target] = {}
             self.errors = {}
 
             self._report_start_abstract(target, ports, prefix, suffix)

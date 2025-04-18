@@ -1,5 +1,6 @@
 import json
 import sys
+from statistics import mean
 
 from pygments import highlight
 from pygments.formatters import TerminalFormatter
@@ -30,6 +31,15 @@ class JsonReporter(ScanReporter):
             "errors": self.errors,
             "last_error": self.last_error,
             "time_ms": time_taken_ms,
+            "response_times": {
+                target: {
+                    "min": min(responses.values()),
+                    "max": max(responses.values()),
+                    "mean": mean(responses.values()),
+                    "avg": sum(responses.values()) / len(responses),
+                }
+                for target, responses in self.response_time.items()
+            },
             "os_detection": {
                 target: (
                     f"{OSDetector.lookup_os_from_ttl(ttl_list[0])} ({ttl_list[0]})"

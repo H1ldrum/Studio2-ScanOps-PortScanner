@@ -1,5 +1,6 @@
 import asyncio
 import math
+import time
 from time import perf_counter
 from typing import Callable
 
@@ -72,14 +73,21 @@ async def PortScanner(
 
             async def scan_and_collect(port, target, scanner):
                 async with semaphore:
-                    portStatus = await scanner.scan_port(port)
+                    portStatus = None
+                    # portStatus = await scanner.scan_port(port)
+                    response_time = 0.0
                     retries = args.max_retries
-                    while portStatus is None and retries > 0:
+                    while portStatus is None and retries >= 0:
                         retries = retries - 1
+                        start = time.perf_counter()
                         portStatus = await scanner.scan_port(port)
+                        end = time.perf_counter()
+                        response_time = (end - start) * 1000
 
                     if reporter:
-                        reporter.update_progress(target, port, portStatus)
+                        reporter.update_progress(
+                            target, port, response_time, portStatus
+                        )
                     return portStatus
 
             for p in args.ports:

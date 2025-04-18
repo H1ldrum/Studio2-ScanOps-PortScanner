@@ -1,4 +1,5 @@
 import argparse
+import os
 from dataclasses import dataclass, field
 from email.policy import default
 from socket import gethostbyname
@@ -101,12 +102,14 @@ def parse_args() -> Args:
         help="Prints the ports supplied",
     )
     parser.add_argument(
-        "--no-progress",
+        "--progress",
+        default=True,
         action=argparse.BooleanOptionalAction,
         help="Hides progress-output",
     )
     parser.add_argument(
-        "--no-closed-ports-output",
+        "--closed-ports-output",
+        default=False,
         action=argparse.BooleanOptionalAction,
         help="Hides closed ports from output",
     )
@@ -158,10 +161,8 @@ def parse_args() -> Args:
         disable_host_discover=args_namespace.disable_host_discover,
         ports=args_namespace.ports,
         concurrent=args_namespace.concurrent,
-        with_progress=not getattr(args_namespace, "no_progress", False),
-        with_closed_ports_output=not getattr(
-            args_namespace, "no_closed_ports_output", False
-        ),
+        with_progress=getattr(args_namespace, "progress", True),
+        with_closed_ports_output=getattr(args_namespace, "closed_ports_output", True),
         list_ports=getattr(args_namespace, "list_ports", False),
         list_targets=getattr(args_namespace, "list_targets", False),
         timeout_ms=getattr(args_namespace, "timeout_ms", 1000),
@@ -175,6 +176,7 @@ def parse_args() -> Args:
         )
         args.proxy = getattr(args_namespace, "proxy", None)
 
+    print(args.with_progress, args.with_closed_ports_output)
     return args
 
 
