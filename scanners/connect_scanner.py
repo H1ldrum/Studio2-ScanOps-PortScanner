@@ -32,9 +32,6 @@ class ConnectScanner(Scanner):
                 results = sock.recv(1000).decode(errors="ignore").strip()
                 if results:
                     return results
-                    print(
-                        f"GOT {port} '{results}'",
-                    )
             except (ConnectionRefusedError, OSError):
                 return True
             return True

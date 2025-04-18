@@ -22,6 +22,7 @@ class Args:
     list_ports: bool = False
     list_targets: bool = False
     with_progress: bool = True
+    with_debug: bool = True
     with_closed_ports_output: bool = True
     timeout_ms: int = 1000
     reporter: str = "text"
@@ -41,8 +42,11 @@ commonPorts = {
     53: "dns",
     80: "http",
     110: "pop3",
+    135: "rcp",
+    139: "netbios",
     143: "imap",
     443: "https",
+    445: "smb",
     3000: "dev",
     3001: "dev-alt",
     3389: "rdp",
@@ -108,6 +112,12 @@ def parse_args() -> Args:
         help="Hides progress-output",
     )
     parser.add_argument(
+        "--debug",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Adds debug-information",
+    )
+    parser.add_argument(
         "--closed-ports-output",
         default=False,
         action=argparse.BooleanOptionalAction,
@@ -162,6 +172,7 @@ def parse_args() -> Args:
         ports=args_namespace.ports,
         concurrent=args_namespace.concurrent,
         with_progress=getattr(args_namespace, "progress", True),
+        with_debug=getattr(args_namespace, "debug", False),
         with_closed_ports_output=getattr(args_namespace, "closed_ports_output", True),
         list_ports=getattr(args_namespace, "list_ports", False),
         list_targets=getattr(args_namespace, "list_targets", False),
@@ -176,7 +187,6 @@ def parse_args() -> Args:
         )
         args.proxy = getattr(args_namespace, "proxy", None)
 
-    print(args.with_progress, args.with_closed_ports_output)
     return args
 
 

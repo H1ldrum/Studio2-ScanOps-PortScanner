@@ -2,6 +2,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
+from osdetection.osdetect import OSDetector
 from reporters.banner import extract_banner
 
 # Define Ports type
@@ -56,18 +57,30 @@ class ScanReporter(ABC):
             elif isinstance(status_banner, str):
                 # self.open_ports[target].append(current_port)
                 self.open_ports[target][current_port] = extract_banner(
-                    target, current_port, status_banner
+                    target,
+                    current_port,
+                    status_banner,
+                    timeout=self.get_suitable_timeout(target),
                 )
             elif status_banner is True:
                 # self.open_ports[target].append(current_port)
                 self.open_ports[target][current_port] = extract_banner(
-                    target, current_port, ""
+                    target, current_port, "", timeout=self.get_suitable_timeout(target)
                 )
             elif not status_banner:
                 self.closed_ports[target].append(current_port)
 
             # Call the abstract implementation within the lock
             self._update_progress_abstract(target, current_port, status_banner)
+
+    def get_suitable_timeout(self, target: str, factor=5):
+        if target not in self.response_time:
+            return 3
+        maximum = max(self.response_time[target].values())
+        if not maximum:
+            return 3
+        maximum = maximum * factor
+        return min(maximum, 3)
 
     def report_start(
         self, target: str, ports: Ports, prefix="", suffix: str = ""

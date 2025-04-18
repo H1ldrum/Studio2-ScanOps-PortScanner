@@ -5,7 +5,9 @@ from sys import stderr
 from typing import Tuple
 
 import requests
+import urllib3
 
+urllib3.disable_warnings()
 # TODO: refactor so that banner is not part of reporters-module
 server_headers = ["server", "x-server", "powered-by", "x-powered-by"]
 version_headers = ["x-aspnet-version"]
@@ -46,14 +48,14 @@ def clean_banner(target: str, port: int, raw_banner: str) -> str:
     return raw_banner.strip()
 
 
-def extract_banner(target: str, port: int, raw_banner: str, timeout=3) -> str:
+def extract_banner(target: str, port: int, raw_banner: str, timeout=3.0) -> str:
     if raw_banner.strip():
         return clean_banner(target, port, raw_banner)
-    tcpBanner = grabTcpBanner(target, port, timeout)
+    tcpBanner = grabTcpBanner(target, port, timeout=timeout)
     if tcpBanner:
         return clean_banner(target, port, tcpBanner)
     try:
-        banner = grabHttpBanner(target, port, timeout)
+        banner = grabHttpBanner(target, port, timeout=timeout)
         if banner:
             return clean_banner(target, port, banner)
     except Exception as e:
@@ -63,20 +65,58 @@ def extract_banner(target: str, port: int, raw_banner: str, timeout=3) -> str:
     return ""
 
 
-def grabHttpBanner(target: str, port: int, timeout=3):
-    url = f"http://{target}:{port}"
-    response = requests.head(url, timeout=timeout, verify=False)
+def grabHttpBanner(target: str, port: int, scheme="", timeout=3.0):
+    if not scheme:
+        if port in [443, 8443, 4443, 9443, 10443]:
+            scheme = "https"
+        else:
+            scheme = "http"
+    try:
+        url = f"{scheme}://{target}:{port}"
+        response = requests.head(
+            url,
+            timeout=timeout,
+            verify=False,
+        )
+        prefix = f"{scheme.upper()}/{response.raw.version / 10}"
 
-    for h in server_headers:
-        if h in response.headers:
-            return response.headers[h]
-    for h in version_headers:
-        if h in response.headers:
-            return h + response.headers[h]
-    return f"HTTP/{response.raw.version / 10} {response.status_code}"
+        for h in server_headers:
+            if h in response.headers:
+                return response.headers[h]
+        for h in version_headers:
+            if h in response.headers:
+                return h + response.headers[h]
+
+        return f"{prefix} {response.status_code}"
+    except Exception as e:
+        if scheme == "http" and is_connection_reset_error(e):
+            return grabHttpBanner(target, port, "https", timeout=timeout)
+        raise e
 
 
-def grabTcpBanner(target: str, port: int, timeout=3):
+def is_connection_reset_error(exception):
+    """Check if an exception is or contains a ConnectionResetError."""
+
+    # Direct check for ConnectionResetError
+    if isinstance(exception, ConnectionResetError):
+        return True
+
+    # For requests.exceptions.ConnectionError with nested ConnectionResetError
+    if isinstance(exception, requests.exceptions.ConnectionError):
+        # Check if ConnectionResetError appears in the exception args
+        for arg in exception.args:
+            # Check if this arg is a tuple containing ConnectionResetError
+            if isinstance(arg, tuple) and len(arg) == 2:
+                _, inner_exc = arg
+                if isinstance(inner_exc, ConnectionResetError):
+                    return True
+
+    # Fallback to string check if needed
+    error_str = str(exception).lower()
+    return "connection reset" in error_str
+
+
+def grabTcpBanner(target: str, port: int, timeout=3.0):
     try:
         # Create socket
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

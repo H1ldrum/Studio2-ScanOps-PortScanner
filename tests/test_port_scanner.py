@@ -136,7 +136,8 @@ async def test_home_media_syn():
 @pytest.mark.fast
 async def test_home_media_connect_fast():
     """Connect-scan should detect all port-statuses on a known host"""
-    ports_to_scan = [
+    ports_to_scan = parse_int_list("1-10000,32400,51413")
+    expoected_open = [
         22,
         80,
         443,
@@ -153,7 +154,6 @@ async def test_home_media_connect_fast():
         51413,
     ]
     target = "192.168.38.163"
-    expoected_open = ports_to_scan
     x = PortScannerTestCase(
         args=Args(
             command="connect_scan",
@@ -170,11 +170,10 @@ async def test_home_media_connect_fast():
     )
     await run_port_scanner_basic(x)
 
-
 async def run_port_scanner_basic(test_case: PortScannerTestCase):
     # Arrange
     reporter = cli_reporter.ConsoleReporter(
-        with_progress=False, with_closed_ports=False
+        with_progress=False, with_closed_ports=False, with_debug=True
     )
     pinger = CmdPinger()
 

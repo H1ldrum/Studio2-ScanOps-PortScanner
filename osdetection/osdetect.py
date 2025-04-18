@@ -1,4 +1,21 @@
+import json
 import socket
+from dataclasses import dataclass
+from typing import Dict
+
+
+@dataclass
+class OSGuess:
+    kind: str
+    description: str
+    possible_oses: list[str]
+
+
+class DataclassJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if hasattr(o, "__dataclass_fields__"):
+            return {k: getattr(o, k) for k in o.__dataclass_fields__}
+        return super().default(o)
 
 
 class OSDetector:
@@ -11,35 +28,39 @@ class OSDetector:
     }
 
     @staticmethod
-    def lookup_os_from_ttl(ttl_value):
+    def lookup_os_from_ttl(target: str, ttl_value) -> OSGuess | None:
+        possible_oses: list[str] = []
         if ttl_value in OSDetector.TTL_SIGNATURES:
-            return OSDetector.TTL_SIGNATURES[ttl_value]
+            possible_oses = OSDetector.TTL_SIGNATURES[ttl_value]
+        else:
+            for ttl in sorted(OSDetector.TTL_SIGNATURES.keys()):
+                if ttl >= ttl_value:
+                    possible_oses = OSDetector.TTL_SIGNATURES[ttl]
 
-        for ttl in sorted(OSDetector.TTL_SIGNATURES.keys()):
-            if ttl >= ttl_value:
-                return OSDetector.TTL_SIGNATURES[ttl]
-
-        return ["Unknown"]
-
-    @staticmethod
-    def get_ttl_from_ping(target, timeout=2):
-        from scapy.all import ICMP, IP, sr1
-
-        packet = IP(dst=target) / ICMP()
-        response = sr1(packet, timeout=timeout, verbose=0)
-
-        if response:
-            return response.ttl
-        return None
-
-    @staticmethod
-    def grab_banner(ip, port):
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(1)  # Timeout in seconds
-                s.connect((ip, port))
-                banner = s.recv(1024)
-                return banner.decode(errors="ignore").strip()
-        except Exception:
+        if len(possible_oses) == 0:
             return None
 
+        g = OSGuess(
+            kind="from_ttl_values",
+            description=f"Based on ttl-values, it looks like the target {target} could be one of: {', '.join(possible_oses)}",
+            possible_oses=possible_oses,
+        )
+        return g
+
+    @staticmethod
+    def lookup_os_from_port_list(
+        target: str, ports: Dict[int, str] | None
+    ) -> list[OSGuess]:
+        guesses: list[OSGuess] = []
+        if not ports:
+            return guesses
+        possible_oses: list[str] = []
+        if 135 in ports and 139 in ports and 445 in ports:
+            possible_oses = ["Windows"]
+            g = OSGuess(
+                kind="from_port_list",
+                description=f"Based on the combination of ports open (135,139,445), the target {target} is likely windows-based",
+                possible_oses=possible_oses,
+            )
+            guesses.append(g)
+        return guesses

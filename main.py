@@ -62,7 +62,11 @@ def createReporter(args: Args) -> ScanReporter | None:
     if args.reporter == "None":
         return None
     if args.reporter == "text":
-        return ConsoleReporter(with_progress=args.with_progress)
+        return ConsoleReporter(
+            with_progress=args.with_progress,
+            with_debug=args.with_debug,
+            with_closed_ports=args.with_closed_ports_output,
+        )
     if args.reporter == "json":
         return JsonReporter()
 

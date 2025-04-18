@@ -1,5 +1,6 @@
 import json
 import sys
+from dataclasses import is_dataclass
 from statistics import mean
 
 from pygments import highlight
@@ -8,6 +9,18 @@ from pygments.lexers import JsonLexer
 
 from osdetection.osdetect import OSDetector
 from reporters.reporter import Ports, ScanReporter
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        # Handle dataclass objects
+        if is_dataclass(obj):
+            return {k: getattr(obj, k) for k in obj.__dataclass_fields__}
+
+        # Handle any other custom objects here as needed
+
+        # For all other types, use default behavior
+        return super().default(obj)
 
 
 class JsonReporter(ScanReporter):
@@ -42,14 +55,23 @@ class JsonReporter(ScanReporter):
             },
             "os_detection": {
                 target: (
-                    f"{OSDetector.lookup_os_from_ttl(ttl_list[0])} ({ttl_list[0]})"
-                    if ttl_list
-                    else "Unknown (No TTL)"
+                    # this returns array
+                    *OSDetector.lookup_os_from_port_list(
+                        target, self.open_ports.get(target)
+                    ),
+                    (
+                        # this returns items
+                        OSDetector.lookup_os_from_ttl(target, ttl_list[0])
+                        if ttl_list
+                        else "Unknown (No TTL)"
+                    ),
                 )
                 for target, ttl_list in self.ttls.items()
             },
         }
-        json_str = json.dumps(result)
+        json_str = json.dumps(
+            result, cls=CustomJSONEncoder, indent=2 if sys.stdout.isatty() else None
+        )
         if not sys.stdout.isatty():
             print(json_str)
             return

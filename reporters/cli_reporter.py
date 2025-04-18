@@ -1,4 +1,3 @@
-import math
 import shutil
 from statistics import mean
 from sys import stderr, stdout
@@ -9,9 +8,12 @@ from reporters.reporter import ScanReporter
 
 
 class ConsoleReporter(ScanReporter):
-    def __init__(self, with_progress=True, with_closed_ports=True) -> None:
+    def __init__(
+        self, with_progress=True, with_closed_ports=True, with_debug=False
+    ) -> None:
         self.width = shutil.get_terminal_size()[0]
         self.with_progress = with_progress
+        self.with_debug = with_debug
         self.with_closed_ports = with_closed_ports
         super().__init__()
 
@@ -54,7 +56,9 @@ class ConsoleReporter(ScanReporter):
         for target, d in self.response_time.items():
             all_times = list(d.values())
             average = sum(all_times) / len(all_times)
-            print(f"Average response-time for {target}: {average:.2f} ms, max={max(all_times):.2f} ms, mean={mean(all_times):.2f} ms,  min={min(all_times):.2f} ms, based on {len(all_times)} entries")
+            print(
+                f"Average response-time for {target}: {average:.2f} ms, max={max(all_times):.2f} ms, mean={mean(all_times):.2f} ms,  min={min(all_times):.2f} ms, based on {len(all_times)} entries"
+            )
         for target in self.open_ports:
             ports = self.open_ports[target]
             with_banners = {k: v for k, v in ports.items() if v}
@@ -84,16 +88,24 @@ class ConsoleReporter(ScanReporter):
                 print(
                     f"\t Error {error_name} occurred on ports: {stringify_compact_list_of_ints(ports)}"
                 )
+        for target, ports in self.open_ports.items():
+            guesses = OSDetector.lookup_os_from_port_list(target, ports)
+            for g in guesses:
+                print(g.description)
         if self.ttls:
             for target, ttls in self.ttls.items():
-                detected_os_list = [
-                    f"{OSDetector.lookup_os_from_ttl(ttl)} ({ttl})" for ttl in ttls
+                guesses = [
+                    os
+                    for ttl in ttls
+                    # hey, a walrus!
+                    if (os := OSDetector.lookup_os_from_ttl(target, ttl))
                 ]
-                print(
-                    f"Based on ttl-values, it looks like the target {target} could be one of: {detected_os_list}"
-                )
+                for g in guesses:
+                    print(g.description)
 
     def debug(self, string) -> None:
+        if not self.with_debug:
+            return
         print("DEBUG", string, file=stderr, flush=True)
 
     def info(self, string) -> None:
