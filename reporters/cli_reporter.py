@@ -1,5 +1,5 @@
 import shutil
-from sys import stderr
+from sys import stderr, stdout
 from typing import List
 
 from osdetection.osdetect import OSDetector
@@ -7,8 +7,10 @@ from reporters.reporter import ScanReporter
 
 
 class ConsoleReporter(ScanReporter):
-    def __init__(self) -> None:
+    def __init__(self, with_progress=True, with_closed_ports=True) -> None:
         self.width = shutil.get_terminal_size()[0]
+        self.with_progress = with_progress
+        self.with_closed_ports = with_closed_ports
         super().__init__()
 
     def limit_output(
@@ -20,6 +22,8 @@ class ConsoleReporter(ScanReporter):
     def _update_progress_abstract(
         self, target, current_port: int, is_open: bool | Exception | None
     ) -> None:
+        if not self.with_progress:
+            return
         # super().update_progress(target, current_port, is_open)
         total_open = sum(
             len(list_of_ports) for list_of_ports in self.open_ports.values()
@@ -34,21 +38,26 @@ class ConsoleReporter(ScanReporter):
         self, target: str, ports: List[int], prefix="", suffix: str = ""
     ) -> None:
         # super().report_start(target, ports, prefix, suffix)
-        print(f"{prefix}Starting scan on {target} for {len(ports)} ports {suffix}")
+        self.debug(
+            f"{prefix}Starting scan on {target} for {len(ports)} ports. {suffix}. Ports: {stringify_compact_list_of_ints(ports)}"
+        )
 
     def _report_final_abstract(self, time_taken) -> None:
-        total_count = sum(
-            len(list_of_ports) for list_of_ports in self.open_ports.values()
-        )
-        print(
-            f"\rCompleted scan of {len(self.open_ports)} targets with {self.scanned_ports} total ports scanned, of which {total_count} are open in in {time_taken:.3f}s\n",
+        self.limit_output(
+            f"\rCompleted scan of {len(self.open_ports)} targets with {self.scanned_ports} total ports scanned in in {time_taken:.3f}s\n",
             end="",
             flush=True,
+            file=stdout,
         )
         for target in self.open_ports:
             ports = self.open_ports[target]
+            with_banners = {k: v for k, v in ports.items() if v}
+            if with_banners:
+                print("Found ports with banners:")
+                for key, value in with_banners.items():
+                    print(f"  {key}: {value}")
             print(
-                f"Found {len(ports)} open ports on {target}: {stringify_compact_list_of_ints(ports)}"
+                f"Found {len(ports)} open ports on {target}: {stringify_compact_list_of_ints(list(ports.keys()))}"
             )
         for target in self.filtered_ports:
             ports = self.filtered_ports[target]
@@ -79,10 +88,10 @@ class ConsoleReporter(ScanReporter):
                 )
 
     def debug(self, string) -> None:
-        print("\nDEBUG", string, file=stderr, flush=True)
+        print("DEBUG", string, file=stderr, flush=True)
 
     def info(self, string) -> None:
-        print("\ninfo", string, file=stderr, flush=True)
+        print("info", string, file=stderr, flush=True)
 
 
 def compact_list_of_ints(numbers: list[int]) -> list[int]:

@@ -6,7 +6,6 @@ from pygments.formatters import TerminalFormatter
 from pygments.lexers import JsonLexer
 
 from osdetection.osdetect import OSDetector
-from reporters.cli_reporter import compact_list_of_ints, stringify_compact_list_of_ints
 from reporters.reporter import Ports, ScanReporter
 
 

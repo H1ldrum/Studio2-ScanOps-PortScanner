@@ -1,5 +1,6 @@
 import argparse
 from dataclasses import dataclass, field
+from email.policy import default
 from socket import gethostbyname
 from sys import stderr
 from typing import List, Optional, OrderedDict
@@ -19,6 +20,8 @@ class Args:
     max_retries: int = 3
     list_ports: bool = False
     list_targets: bool = False
+    with_progress: bool = True
+    with_closed_ports_output: bool = True
     timeout_ms: int = 1000
     reporter: str = "text"
 
@@ -98,6 +101,16 @@ def parse_args() -> Args:
         help="Prints the ports supplied",
     )
     parser.add_argument(
+        "--no-progress",
+        action=argparse.BooleanOptionalAction,
+        help="Hides progress-output",
+    )
+    parser.add_argument(
+        "--no-closed-ports-output",
+        action=argparse.BooleanOptionalAction,
+        help="Hides closed ports from output",
+    )
+    parser.add_argument(
         "--list-targets",
         action=argparse.BooleanOptionalAction,
         help="Prints the targets supplied",
@@ -145,6 +158,10 @@ def parse_args() -> Args:
         disable_host_discover=args_namespace.disable_host_discover,
         ports=args_namespace.ports,
         concurrent=args_namespace.concurrent,
+        with_progress=not getattr(args_namespace, "no_progress", False),
+        with_closed_ports_output=not getattr(
+            args_namespace, "no_closed_ports_output", False
+        ),
         list_ports=getattr(args_namespace, "list_ports", False),
         list_targets=getattr(args_namespace, "list_targets", False),
         timeout_ms=getattr(args_namespace, "timeout_ms", 1000),
@@ -229,7 +246,8 @@ def _parse_int_list(range_str) -> list[int]:
 def portInRange(port: int):
     if port == 0:
         print(
-            "Warning, port 0 is normally reserved by the OS, and typically cannot be assigned. Consider excluding it from the specified ports."
+            "Warning, port 0 is normally reserved by the OS, and typically cannot be assigned. Consider excluding it from the specified ports.",
+            file=stderr,
         )
     if port < 0:
         raise ValueError(f"value cannot be below zero, received {port}")

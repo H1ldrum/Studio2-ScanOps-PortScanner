@@ -58,11 +58,11 @@ def createScanner(args: Args, target: str) -> Scanner:
     raise Exception(f"Unknown command {args.command}")
 
 
-def createReporter(args) -> ScanReporter | None:
+def createReporter(args: Args) -> ScanReporter | None:
     if args.reporter == "None":
         return None
     if args.reporter == "text":
-        return ConsoleReporter()
+        return ConsoleReporter(with_progress=args.with_progress)
     if args.reporter == "json":
         return JsonReporter()
 

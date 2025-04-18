@@ -9,6 +9,11 @@ resultsDir := "benchmark_results"
 setup:
 	mkdir -p $(resultsDir)
 
+test: unit_test
+	sudo python -m pytest tests/ -m 'not unit'  --html=./tests/test_results.html --self-contained-html
+unit_test:
+	python -m pytest tests/ -m unit 
+
 # Test specific ports on scanme.nmap.org
 benchmark-specific-ports: setup
 	sudo hyperfine --warmup 1 \

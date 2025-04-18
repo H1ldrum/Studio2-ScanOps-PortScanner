@@ -12,7 +12,7 @@ class ConnectScanner(Scanner):
         message = "Hello, world!"
         self.message_bytes = message.encode("utf-8")
 
-    async def scan_port(self, port: int) -> bool | None:
+    async def scan_port(self, port: int) -> bool | None | str:
         with socket.socket() as sock:
             try:
                 sock.settimeout(self.timeout)
@@ -31,8 +31,11 @@ class ConnectScanner(Scanner):
                 sock.send(self.message_bytes)
                 results = sock.recv(1000).decode(errors="ignore").strip()
                 if results:
-                    print(f"GOT {port} '{results}'", file=stderr)
-            except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
+                    return results
+                    print(
+                        f"GOT {port} '{results}'",
+                    )
+            except (ConnectionRefusedError, OSError):
                 return True
             return True
 

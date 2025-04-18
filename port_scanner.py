@@ -54,7 +54,8 @@ async def PortScanner(
             ):
                 async with semaphore:
                     await scanner.scan_ports(ports, reporter)
-                    reporter.debug(f"completed chunk {chunk + 1}/{total_chunks}")
+                    if args.with_progress:
+                        reporter.debug(f"completed chunk {chunk + 1}/{total_chunks}")
 
             n = len(tasks)
             total_chunks = math.ceil(len(args.ports) / args.concurrent)

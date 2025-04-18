@@ -1,7 +1,9 @@
 import os
+import re
 import sys
-from dataclasses import dataclass, field
-from typing import Dict, Optional
+from dataclasses import dataclass
+from re import Pattern
+from typing import AnyStr, Dict, Optional
 
 import pytest
 
@@ -23,45 +25,69 @@ from port_scanner import PortScanner
 @dataclass
 class PortScannerTestCase:
     args: Args
-    expected_open: Dict[str, list[int]]
-    expected_filtered: Dict[str, list[int]]
-    expected_closed: Dict[str, list[int]]
-    expoected_ports_scanned: Optional[int]
-    test_id: str
-    markers: list[str] = field(default_factory=list)
+    expected_open: Optional[Dict[str, list[int]]] = None
+    expected_banners: Optional[Dict[str, Dict[int, str | Pattern]]] = None
+    expected_filtered: Optional[Dict[str, list[int]]] = None
+    expected_closed: Optional[Dict[str, list[int]]] = None
+    expoected_ports_scanned: Optional[int] = None
+    # test_id: Optional[str] = None
 
 
 @pytest.mark.external
 @pytest.mark.privileged
+@pytest.mark.banner
 async def test_scanme_syn():
+    """Syn-scan should detect all port-statuses on scanme.nmap.org, as well as return correct banners"""
+    target = "scanme.nmap.org"
     x = PortScannerTestCase(
         args=Args(
             command="syn_scan",
-            target=["scanme.nmap.org"],
+            target=[target],
             ports=[22, 25, 80, 9929, 31337, 6000, 6080],
         ),
+        expected_banners={
+            target: {
+                22: "SSH-2.0-OpenSSH_6.6.1p1 Ubuntu-2ubuntu2.13",
+                80: "Apache/2.4.7 (Ubuntu)",
+                # nping echo has garbled output. We have not implemented the specific handling of this.
+                # I do not htink any other service uses this protocol
+                9929: re.compile("nping echo"),
+            }
+        },
         expoected_ports_scanned=7,
-        expected_open={"scanme.nmap.org": [22, 80, 9929, 31337]},
-        expected_filtered={"scanme.nmap.org": [25]},
-        expected_closed={"scanme.nmap.org": [6000, 6080]},
-        test_id="scanme.nmap.org reports correct ports as open/filtered/closed for connect-scan",
+        expected_open={target: [22, 80, 9929, 31337]},
+        expected_filtered={target: [25]},
+        expected_closed={target: [6000, 6080]},
+        # test_id="scanme.nmap.org reports correct ports as open/filtered/closed for connect-scan",
     )
     await run_port_scanner_basic(x)
 
 
 @pytest.mark.external
+@pytest.mark.banner
 async def test_scanme_connect():
+    """Connect-scan should detect all port-statuses on scanme.nmap.org, as well as return correct banners"""
+    target = "scanme.nmap.org"
     x = PortScannerTestCase(
         args=Args(
             command="connect_scan",
-            target=["scanme.nmap.org"],
+            target=[target],
             ports=[22, 25, 80, 9929, 31337, 6000, 6080],
         ),
+        expected_banners={
+            target: {
+                22: "SSH-2.0-OpenSSH_6.6.1p1 Ubuntu-2ubuntu2.13",
+                80: "Apache/2.4.7 (Ubuntu)",
+                # nping echo has garbled output. We have not implemented the specific handling of this.
+                # I do not htink any other service uses this protocol
+                9929: re.compile("nping echo"),
+            }
+        },
         expoected_ports_scanned=7,
-        expected_open={"scanme.nmap.org": [22, 80, 9929, 31337]},
-        expected_filtered={"scanme.nmap.org": [25]},
-        expected_closed={"scanme.nmap.org": [6000, 6080]},
-        test_id="scanme.nmap.org reports correct ports as open/filtered/closed for SYN-scan",
+        expected_open={target: [22, 80, 9929, 31337]},
+        expected_filtered={target: [25]},
+        expected_closed={target: [6000, 6080]},
+        # test_id="scanme.nmap.org reports correct ports as open/filtered/closed for SYN-scan",
     )
     await run_port_scanner_basic(x)
 
@@ -70,6 +96,7 @@ async def test_scanme_connect():
 @pytest.mark.privileged
 @pytest.mark.slow
 async def test_home_media_syn():
+    """Syn-scan should detect all port-statuses on a known host"""
     ports_to_scan = parse_int_list("1-10000,32400,51413")
     target = "192.168.38.163"
     expoected_open = [
@@ -100,14 +127,55 @@ async def test_home_media_syn():
         expected_open={target: expoected_open},
         expected_filtered={target: []},
         expected_closed={target: list(set(ports_to_scan) - set(expoected_open))},
-        test_id="home media server reports correct ports as open/filtered/closed",
+        # test_id="home media server reports correct ports as open/filtered/closed",
+    )
+    await run_port_scanner_basic(x)
+
+
+@pytest.mark.home
+@pytest.mark.fast
+async def test_home_media_connect_fast():
+    """Connect-scan should detect all port-statuses on a known host"""
+    ports_to_scan = [
+        22,
+        80,
+        443,
+        1115,
+        1617,
+        7878,
+        8040,
+        8080,
+        8686,
+        8989,
+        9091,
+        9696,
+        32400,
+        51413,
+    ]
+    target = "192.168.38.163"
+    expoected_open = ports_to_scan
+    x = PortScannerTestCase(
+        args=Args(
+            command="connect_scan",
+            target=[target],
+            timeout_ms=200,
+            ports=ports_to_scan,
+        ),
+        # expoected_ports_scanned=65535,
+        expoected_ports_scanned=len(ports_to_scan),
+        expected_open={target: expoected_open},
+        expected_filtered={target: []},
+        expected_closed={target: list(set(ports_to_scan) - set(expoected_open))},
+        # test_id="home media server reports correct ports as open/filtered/closed",
     )
     await run_port_scanner_basic(x)
 
 
 async def run_port_scanner_basic(test_case: PortScannerTestCase):
     # Arrange
-    reporter = cli_reporter.ConsoleReporter()
+    reporter = cli_reporter.ConsoleReporter(
+        with_progress=False, with_closed_ports=False
+    )
     pinger = CmdPinger()
 
     def scanner_factory(target: str):
@@ -120,11 +188,28 @@ async def run_port_scanner_basic(test_case: PortScannerTestCase):
     if test_case.expected_filtered is not None:
         assert reporter.scanned_ports == test_case.expoected_ports_scanned
     assert len(reporter.open_ports.keys()) == len(test_case.args.target)
+    if test_case.expected_banners:
+        for target, d in test_case.expected_banners.items():
+            assert target in reporter.open_ports
+            for port, banner in d.items():
+                assert port in reporter.open_ports[target]
+                if isinstance(banner, str):
+                    assert banner == reporter.open_ports[target][port], (
+                        f"expected {banner} on port {port} in reporter.open_ports[{target}], but got {reporter.open_ports[target][port]}. All port-banners for this target: {reporter.open_ports[target]}"
+                    )
+                else:
+                    assert (
+                        banner.match(reporter.open_ports[target][port]) is not None
+                    ), (
+                        f"expected regex-match for {banner} on port {port} in reporter.open_ports[{target}], but got {reporter.open_ports[target][port]}. All port-banners for this target: {reporter.open_ports[target]}"
+                    )
+
+            pass
     for target, d in test_case.expected_open.items():
         assert target in reporter.open_ports
         if d is None:
             continue
-        assert_port_list(reporter.open_ports[target], d, "Open")
+        assert_port_list(list(reporter.open_ports[target].keys()), d, "Open")
 
     for target, d in test_case.expected_closed.items():
         assert target in reporter.closed_ports
