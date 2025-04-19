@@ -37,6 +37,7 @@ class JsonReporter(ScanReporter):
     def _report_final_abstract(self, time_taken_ms) -> None:
         result = {
             "total_ports": self.total_ports,
+            "up_targets": self.up_targets,
             "scanned_ports_count": self.scanned_ports,
             "open_ports": self.open_ports,
             "filtered_ports": self.filtered_ports,
@@ -54,19 +55,7 @@ class JsonReporter(ScanReporter):
                 for target, responses in self.response_time.items()
             },
             "os_detection": {
-                target: (
-                    # this returns array
-                    *OSDetector.lookup_os_from_port_list(
-                        target, self.open_ports.get(target)
-                    ),
-                    (
-                        # this returns items
-                        OSDetector.lookup_os_from_ttl(target, ttl_list[0])
-                        if ttl_list
-                        else "Unknown (No TTL)"
-                    ),
-                )
-                for target, ttl_list in self.ttls.items()
+                target: self.osdetect(target) for target in self.open_ports
             },
         }
         json_str = json.dumps(

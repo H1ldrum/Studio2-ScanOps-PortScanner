@@ -55,10 +55,11 @@ class ConsoleReporter(ScanReporter):
         )
         for target, d in self.response_time.items():
             all_times = list(d.values())
-            average = sum(all_times) / len(all_times)
-            print(
-                f"Average response-time for {target}: {average:.2f} ms, max={max(all_times):.2f} ms, mean={mean(all_times):.2f} ms,  min={min(all_times):.2f} ms, based on {len(all_times)} entries"
-            )
+            if all_times:
+                average = sum(all_times) / len(all_times)
+                print(
+                    f"Average response-time for {target}: {average:.2f} ms, max={max(all_times):.2f} ms, mean={mean(all_times):.2f} ms,  min={min(all_times):.2f} ms, based on {len(all_times)} entries"
+                )
         for target in self.open_ports:
             ports = self.open_ports[target]
             with_banners = {k: v for k, v in ports.items() if v}
@@ -88,20 +89,10 @@ class ConsoleReporter(ScanReporter):
                 print(
                     f"\t Error {error_name} occurred on ports: {stringify_compact_list_of_ints(ports)}"
                 )
-        for target, ports in self.open_ports.items():
-            guesses = OSDetector.lookup_os_from_port_list(target, ports)
+        for target in self.open_ports:
+            guesses = self.osdetect(target)
             for g in guesses:
                 print(g.description)
-        if self.ttls:
-            for target, ttls in self.ttls.items():
-                guesses = [
-                    os
-                    for ttl in ttls
-                    # hey, a walrus!
-                    if (os := OSDetector.lookup_os_from_ttl(target, ttl))
-                ]
-                for g in guesses:
-                    print(g.description)
 
     def debug(self, string) -> None:
         if not self.with_debug:

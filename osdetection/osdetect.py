@@ -21,10 +21,11 @@ class DataclassJSONEncoder(json.JSONEncoder):
 class OSDetector:
     # Common default values for operating systems
     TTL_SIGNATURES = {
+        32: ["Windows"],
         64: ["Linux", "Unix", "FreeBSD", "macOS"],
         128: ["Windows"],
         254: ["Solaris", "AIX"],
-        255: ["Network equipment (Cisco, Juniper)"],
+        255: ["Cisco", "Network equipment"],
     }
 
     @staticmethod

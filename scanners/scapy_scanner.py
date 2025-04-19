@@ -54,7 +54,7 @@ class ScapyScanner(Scanner):
         for req, resp in packetPairsWithAnswers:
             if reporter is None:
                 continue
-            response_time = resp.time - req.sent_time
+            response_time_ms = (resp.time - req.sent_time) * 1000
             if not resp.haslayer(TCP):
                 continue
             tcp = resp.getlayer(TCP)
@@ -63,13 +63,13 @@ class ScapyScanner(Scanner):
             if resp.ttl:
                 reporter.report_ttl(self.host, port, resp.ttl)
             if tcp.flags == SYNACK:
-                reporter.update_progress(self.host, port, response_time, True)
+                reporter.update_progress(self.host, port, response_time_ms, True)
             elif tcp.flags == RSTACK:
-                reporter.update_progress(self.host, port, response_time, False)
+                reporter.update_progress(self.host, port, response_time_ms, False)
             else:
                 print("unknown flag", tcp.flags, tcp.sport)
                 reporter.update_progress(
-                    self.host, tcp.sport, response_time, Exception("unknown flag")
+                    self.host, tcp.sport, response_time_ms, Exception("unknown flag")
                 )
         if len(ports_to_retry) > 0 and retries > 0:
             # print(f"retrying attempts {retries} left. Ports: {ports_to_retry}\n")

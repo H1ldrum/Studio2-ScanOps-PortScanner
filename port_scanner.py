@@ -26,6 +26,7 @@ async def PortScanner(
         count = len(targets)
         reporter.info(f"Checking if {count} targets are up")
         targets = pinger.get_up_hosts(targets, max_timeout=args.timeout_ms / 1000)
+        reporter.report_up_targets(targets)
         reporter.info(f"{len(targets)}/{count} targets are up")
 
     if args.list_targets:
@@ -36,6 +37,9 @@ async def PortScanner(
     reporter.info(f"Scanning {len(targets)} targets")
     tasks = []
     endTasks = []
+    if len(args.ports) == 0:
+        reporter.report_final(0)
+        return
     for target in targets:
         scanner = scannerfunc(target)
         if reporter:
@@ -75,18 +79,18 @@ async def PortScanner(
                 async with semaphore:
                     portStatus = None
                     # portStatus = await scanner.scan_port(port)
-                    response_time = 0.0
+                    response_time_ms = 0.0
                     retries = args.max_retries
                     while portStatus is None and retries >= 0:
                         retries = retries - 1
                         start = time.perf_counter()
                         portStatus = await scanner.scan_port(port)
                         end = time.perf_counter()
-                        response_time = (end - start) * 1000
+                        response_time_ms = (end - start) * 1000
 
                     if reporter:
                         reporter.update_progress(
-                            target, port, response_time, portStatus
+                            target, port, response_time_ms, portStatus
                         )
                     return portStatus
 

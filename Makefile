@@ -63,4 +63,4 @@ benchmark-lan: setup
 # Run all benchmarks
 benchmark-all: benchmark-specific-ports benchmark-os-detection benchmark-lan benchmark-full-ports benchmark-localhost
 
-.PHONY: setup benchmark-specific-ports benchmark-full-ports benchmark-localhost benchmark-os-detection benchmark-lan benchmark-all
+.PHONY: setup benchmark-specific-ports benchmark-full-ports benchmark-localhost benchmark-os-detection benchmark-lan benchmark-all test unit_test

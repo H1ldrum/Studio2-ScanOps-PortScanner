@@ -60,7 +60,8 @@ def extract_banner(target: str, port: int, raw_banner: str, timeout=3.0) -> str:
             return clean_banner(target, port, banner)
     except Exception as e:
         print(
-            f"Failed to detect banner for {target}:{port} over http: {e}", file=stderr
+            f"Failed to detect banner for {target}:{port} over http, and tcp-banner returned None: {e}",
+            file=stderr,
         )
     return ""
 
