@@ -22,6 +22,7 @@ class Args:
     list_ports: bool = False
     list_targets: bool = False
     with_progress: bool = True
+    with_banner_extraction: bool = True
     with_debug: bool = True
     with_closed_ports_output: bool = True
     timeout_ms: int = 1000
@@ -112,6 +113,12 @@ def parse_args() -> Args:
         help="Hides progress-output",
     )
     parser.add_argument(
+        "--extract-banner",
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        help="extract banners from open ports",
+    )
+    parser.add_argument(
         "--debug",
         default=False,
         action=argparse.BooleanOptionalAction,
@@ -173,6 +180,7 @@ def parse_args() -> Args:
         concurrent=args_namespace.concurrent,
         with_progress=getattr(args_namespace, "progress", True),
         with_debug=getattr(args_namespace, "debug", False),
+        with_banner_extraction=getattr(args_namespace, "extract_banner", False),
         with_closed_ports_output=getattr(args_namespace, "closed_ports_output", True),
         list_ports=getattr(args_namespace, "list_ports", False),
         list_targets=getattr(args_namespace, "list_targets", False),

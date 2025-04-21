@@ -1,6 +1,8 @@
+import http
 import math
 import socket
 from collections import Counter
+from http.client import BadStatusLine
 from sys import stderr
 from typing import Tuple
 
@@ -89,6 +91,8 @@ def grabHttpBanner(target: str, port: int, scheme="", timeout=3.0):
                 return h + response.headers[h]
 
         return f"{prefix} {response.status_code}"
+    except BadStatusLine as e:
+        return e.line if isinstance(e.line, str) else ""
     except Exception as e:
         if scheme == "http" and is_connection_reset_error(e):
             return grabHttpBanner(target, port, "https", timeout=timeout)

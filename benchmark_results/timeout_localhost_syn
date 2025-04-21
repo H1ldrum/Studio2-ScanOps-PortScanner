@@ -1,0 +1,116 @@
+{
+  "results": [
+    {
+      "command": "./.venv-python/bin/python main.py --concurrent=1200 -t 127.0.0.1 -p- --timeout_ms=1 syn_scan",
+      "mean": 42.6123467314,
+      "stddev": null,
+      "median": 42.6123467314,
+      "user": 25.96543478,
+      "system": 0.9981359799999999,
+      "min": 42.6123467314,
+      "max": 42.6123467314,
+      "times": [
+        42.6123467314
+      ],
+      "exit_codes": [
+        0
+      ]
+    },
+    {
+      "command": "./.venv-python/bin/python main.py --concurrent=1200 -t 127.0.0.1 -p- --timeout_ms=5 syn_scan",
+      "mean": 43.0309662674,
+      "stddev": null,
+      "median": 43.0309662674,
+      "user": 26.05158778,
+      "system": 0.9559399799999999,
+      "min": 43.0309662674,
+      "max": 43.0309662674,
+      "times": [
+        43.0309662674
+      ],
+      "exit_codes": [
+        0
+      ]
+    },
+    {
+      "command": "./.venv-python/bin/python main.py --concurrent=1200 -t 127.0.0.1 -p- --timeout_ms=10 syn_scan",
+      "mean": 43.2091106474,
+      "stddev": null,
+      "median": 43.2091106474,
+      "user": 26.123252779999998,
+      "system": 0.9539589799999999,
+      "min": 43.2091106474,
+      "max": 43.2091106474,
+      "times": [
+        43.2091106474
+      ],
+      "exit_codes": [
+        0
+      ]
+    },
+    {
+      "command": "./.venv-python/bin/python main.py --concurrent=1200 -t 127.0.0.1 -p- --timeout_ms=15 syn_scan",
+      "mean": 43.2464860234,
+      "stddev": null,
+      "median": 43.2464860234,
+      "user": 26.303345779999997,
+      "system": 1.0192609799999999,
+      "min": 43.2464860234,
+      "max": 43.2464860234,
+      "times": [
+        43.2464860234
+      ],
+      "exit_codes": [
+        0
+      ]
+    },
+    {
+      "command": "./.venv-python/bin/python main.py --concurrent=1200 -t 127.0.0.1 -p- --timeout_ms=25 syn_scan",
+      "mean": 43.8590448044,
+      "stddev": null,
+      "median": 43.8590448044,
+      "user": 26.77023878,
+      "system": 1.04494098,
+      "min": 43.8590448044,
+      "max": 43.8590448044,
+      "times": [
+        43.8590448044
+      ],
+      "exit_codes": [
+        0
+      ]
+    },
+    {
+      "command": "./.venv-python/bin/python main.py --concurrent=1200 -t 127.0.0.1 -p- --timeout_ms=30 syn_scan",
+      "mean": 43.9323457154,
+      "stddev": null,
+      "median": 43.9323457154,
+      "user": 26.67858378,
+      "system": 1.0217469799999999,
+      "min": 43.9323457154,
+      "max": 43.9323457154,
+      "times": [
+        43.9323457154
+      ],
+      "exit_codes": [
+        0
+      ]
+    },
+    {
+      "command": "./.venv-python/bin/python main.py --concurrent=1200 -t 127.0.0.1 -p- --timeout_ms=35 syn_scan",
+      "mean": 42.5327219804,
+      "stddev": null,
+      "median": 42.5327219804,
+      "user": 25.77157678,
+      "system": 0.9345699799999999,
+      "min": 42.5327219804,
+      "max": 42.5327219804,
+      "times": [
+        42.5327219804
+      ],
+      "exit_codes": [
+        0
+      ]
+    }
+  ]
+}

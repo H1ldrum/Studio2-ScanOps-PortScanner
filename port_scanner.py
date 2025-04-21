@@ -30,9 +30,9 @@ async def PortScanner(
         reporter.info(f"{len(targets)}/{count} targets are up")
 
     if args.list_targets:
-        reporter.info(f"targets to scan: \n{'\n'.join(targets)}")
+        reporter.info(f"targets: \n{'\n'.join(targets)}")
     if args.list_ports or args.list_targets:
-        exit(0)
+        return
 
     reporter.info(f"Scanning {len(targets)} targets")
     tasks = []

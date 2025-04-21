@@ -3,19 +3,23 @@ from statistics import mean
 from sys import stderr, stdout
 from typing import List
 
-from osdetection.osdetect import OSDetector
 from reporters.reporter import ScanReporter
 
 
 class ConsoleReporter(ScanReporter):
     def __init__(
-        self, with_progress=True, with_closed_ports=True, with_debug=False
+        self,
+        with_banner_extraction: bool,
+        with_progress=True,
+        with_closed_ports=True,
+        with_debug=False,
+        file=stderr,
     ) -> None:
         self.width = shutil.get_terminal_size()[0]
         self.with_progress = with_progress
         self.with_debug = with_debug
         self.with_closed_ports = with_closed_ports
-        super().__init__()
+        super().__init__(with_banner_extraction)
 
     def limit_output(
         self, text, prefix="", suffix="", end="", flush=False, file=stderr

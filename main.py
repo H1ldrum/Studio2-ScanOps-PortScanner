@@ -1,4 +1,5 @@
 import asyncio
+from os import devnull
 from platform import platform
 
 import prctl
@@ -60,15 +61,24 @@ def createScanner(args: Args, target: str) -> Scanner:
 
 def createReporter(args: Args) -> ScanReporter | None:
     if args.reporter == "None":
-        return None
+        return ConsoleReporter(
+            with_banner_extraction=args.with_banner_extraction,
+            with_progress=False,
+            with_debug=False,
+            with_closed_ports=False,
+            file=devnull,
+        )
     if args.reporter == "text":
         return ConsoleReporter(
+            with_banner_extraction=args.with_banner_extraction,
             with_progress=args.with_progress,
             with_debug=args.with_debug,
             with_closed_ports=args.with_closed_ports_output,
         )
     if args.reporter == "json":
-        return JsonReporter()
+        return JsonReporter(
+            with_banner_extraction=args.with_banner_extraction,
+        )
 
 
 def canRunSynScan() -> bool | None:

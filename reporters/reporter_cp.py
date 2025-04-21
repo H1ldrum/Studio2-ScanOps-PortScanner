@@ -10,12 +10,10 @@ Ports = List[int]
 TTLs = List[int]
 
 
-class ScanReporter(ABC):
-    def __init__(self, with_banner_extraction: bool):
+class ScanReporterCP(ABC):
+    def __init__(self):
         # Initialize lock for thread safety
         self._lock = threading.RLock()
-        self.with_banner_extraction = with_banner_extraction
-        print("with_banner_extraction", with_banner_extraction)
 
         self.total_ports = 0
         self.scanned_ports = 0
@@ -40,7 +38,7 @@ class ScanReporter(ABC):
         with self._lock:
             self.up_targets = targets
 
-    def update_progress(
+    async def update_progress(
         self,
         target: str,
         current_port: int,
@@ -63,30 +61,17 @@ class ScanReporter(ABC):
                 self.filtered_ports[target].append(current_port)
             elif isinstance(status_banner, str):
                 # self.open_ports[target].append(current_port)
-                self.open_ports[target][current_port] = status_banner
-                if self.with_banner_extraction:
-                    print("extracting banner", current_port)
-                    banner = extract_banner(
-                        target,
-                        current_port,
-                        status_banner,
-                        timeout=self.get_suitable_timeout(target),
-                    )
-                    if banner:
-                        self.open_ports[target][current_port] = banner
+                self.open_ports[target][current_port] = extract_banner(
+                    target,
+                    current_port,
+                    status_banner,
+                    timeout=self.get_suitable_timeout(target),
+                )
             elif status_banner is True:
                 # self.open_ports[target].append(current_port)
-                self.open_ports[target][current_port] = ""
-                if self.with_banner_extraction:
-                    print("extracting bannerX", current_port)
-                    banner = extract_banner(
-                        target,
-                        current_port,
-                        "",
-                        timeout=self.get_suitable_timeout(target),
-                    )
-                    if banner:
-                        self.open_ports[target][current_port] = banner
+                self.open_ports[target][current_port] = extract_banner(
+                    target, current_port, "", timeout=self.get_suitable_timeout(target)
+                )
             elif not status_banner:
                 self.closed_ports[target].append(current_port)
 
