@@ -69,7 +69,7 @@ def parse_args() -> Args:
     subparsers.add_parser("tcp_scan", help="Scan ports over TCP")
     subparsers.add_parser("connect_scan", help="Scan ports using connect")
     subparsers.add_parser("syn_scan", help="Scan ports using SYN (stealth, half-open)")
-    subparsers.add_parser("socket_scan", help="Scan ports using sockets")
+    # subparsers.add_parser("socket_scan", help="Scan ports using sockets")
     parser.add_argument(
         "-o"  # Same as with nmap
         "--os-detection",  # Possible shortname if needed
@@ -80,7 +80,7 @@ def parse_args() -> Args:
         "-t",
         "--target",
         required=True,
-        help="Target IP/hostname to scan",
+        help='Comma-separeted list of targets to scans, in the format of hostnames, IPs and or subnets. (e.g. "10.0.0.1, 10.0.0.3, 192.168.38.0/24")',
         type=parse_target_list,
     )
     parser.add_argument(

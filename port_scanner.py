@@ -25,6 +25,7 @@ async def PortScanner(
     if not args.disable_host_discover:
         count = len(targets)
         reporter.info(f"Checking if {count} targets are up")
+        reporter.debug(f"input-targets: {','.join(targets)}")
         targets = pinger.get_up_hosts(targets, max_timeout=args.timeout_ms / 1000)
         reporter.report_up_targets(targets)
         reporter.info(f"{len(targets)}/{count} targets are up")
