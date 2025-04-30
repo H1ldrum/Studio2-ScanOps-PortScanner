@@ -78,7 +78,6 @@ class ScanReporter(ABC):
                 # self.open_ports[target].append(current_port)
                 self.open_ports[target][current_port] = ""
                 if self.with_banner_extraction:
-                    print("extracting bannerX", current_port)
                     banner = extract_banner(
                         target,
                         current_port,
