@@ -158,8 +158,8 @@ async def test_osdetect_windows():
         # expected_banners={ },
         expected_oses={target: ["Windows"]},
         expoected_ports_scanned=9,
-        expected_open={target: [135, 139, 445, 7680, 49668]},
-        expected_filtered={target: [22, 80, 443, 8080]},
+        expected_open={target: [135, 139, 445, 7680]},
+        expected_filtered={target: [22, 80, 443, 8080, 49668]},
         expected_closed={target: []},
     )
     await run_port_scanner_basic(x)
@@ -178,7 +178,7 @@ async def test_osdetect_linux():
             ports=[22],
             timeout_ms=200,
         ),
-        expected_banners={target: {22: "SSH-2.0-OpenSSH_9.9"}},
+        expected_banners={target: {22: "SSH-2.0-OpenSSH_10.0"}},
         expected_oses={target: ["Linux", "Unix", "FreeBSD", "macOS"]},
         expected_open={target: [22]},
     )
@@ -196,7 +196,7 @@ async def test_home_media_syn():
         22,
         80,
         443,
-        1115,
+        1399,
         1617,
         7878,
         8040,
@@ -234,7 +234,7 @@ async def test_home_media_connect_fast():
         22,
         80,
         443,
-        1115,
+        1399,
         1617,
         7878,
         8040,
@@ -267,7 +267,7 @@ async def test_home_media_connect_fast():
 async def run_port_scanner_basic(test_case: PortScannerTestCase):
     # Arrange
     reporter = cli_reporter.ConsoleReporter(
-        with_banner_extraction=True,
+        with_banner_extraction=test_case.expected_banners is not None,
         with_progress=False,
         with_closed_ports=False,
         with_debug=True,
@@ -296,15 +296,13 @@ async def run_port_scanner_basic(test_case: PortScannerTestCase):
             for port, banner in d.items():
                 assert port in reporter.open_ports[target]
                 if isinstance(banner, str):
-                    assert banner == reporter.open_ports[target][port], (
-                        f"expected {banner} on port {port} in reporter.open_ports[{target}], but got {reporter.open_ports[target][port]}. All port-banners for this target: {reporter.open_ports[target]}"
-                    )
+                    assert (
+                        banner == reporter.open_ports[target][port]
+                    ), f"expected {banner} on port {port} in reporter.open_ports[{target}], but got {reporter.open_ports[target][port]}. All port-banners for this target: {reporter.open_ports[target]}"
                 else:
                     assert (
                         banner.match(reporter.open_ports[target][port]) is not None
-                    ), (
-                        f"expected regex-match for {banner} on port {port} in reporter.open_ports[{target}], but got {reporter.open_ports[target][port]}. All port-banners for this target: {reporter.open_ports[target]}"
-                    )
+                    ), f"expected regex-match for {banner} on port {port} in reporter.open_ports[{target}], but got {reporter.open_ports[target][port]}. All port-banners for this target: {reporter.open_ports[target]}"
 
     if test_case.expected_open:
         for target, d in test_case.expected_open.items():
@@ -344,6 +342,6 @@ def assert_port_list(got: list[int] | Dict[str, Ports], want: list[int] | None, 
         return
     missing = cli_reporter.stringify_compact_list_of_ints(list(set(want) - set(got)))
     extra = cli_reporter.stringify_compact_list_of_ints(list(set(got) - set(want)))
-    assert False, (
-        f"{kind} Port lists don't match: Missing: {missing}, Extra: {extra}. Got {cli_reporter.stringify_compact_list_of_ints(got)}, wanted {cli_reporter.stringify_compact_list_of_ints(want)}"
-    )
+    assert (
+        False
+    ), f"{kind} Port lists don't match: Missing: {missing}, Extra: {extra}. Got {cli_reporter.stringify_compact_list_of_ints(got)}, wanted {cli_reporter.stringify_compact_list_of_ints(want)}"

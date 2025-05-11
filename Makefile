@@ -275,9 +275,9 @@ plot:
 	 	 	-e 's/.*http_*/scanops http/'  > ../Group-report/Figures/vs-table-xx.tex
 
 test: unit_test
-	sudo python -x -m pytest tests/ -m 'not unit'  --html=./tests/test_results.html --self-contained-html
+	sudo $(pytest) tests/ -m 'not unit'  --html=./tests/test_results.html --self-contained-html
 unit_test:
-	$(pytest) -x tests/ -m unit  -vv
+	$(pytest) -x tests/ -m unit  -vv --html=./tests/test_unit_results.html --self-contained-html
 # Test specific ports on scanme.nmap.org
 benchmark-specific-ports: setup
 	$(hyperfine) \
